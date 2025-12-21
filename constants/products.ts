@@ -4,7 +4,12 @@ export interface Product {
   description: string;
   price: number; // Base price
   image: any;
-  category: "Hard Luggage" | "Soft Luggage" | "Backpacks" | "Accessories";
+  category:
+    | "Hard Luggage"
+    | "Soft Luggage"
+    | "Duffles"
+    | "Backpacks"
+    | "Accessories";
   rating: number;
   reviews: number;
   sizes: string[];
@@ -62,7 +67,6 @@ export const PRODUCTS: Product[] = [
       "72cm": 5250,
       "84cm": 6100,
     },
-    
   },
   {
     id: "philly",
@@ -80,12 +84,12 @@ export const PRODUCTS: Product[] = [
       "70cm": 6510,
       "82cm": 7380,
     },
-    
   },
   {
     id: "brett",
     name: "Brett 4.0",
-    description: "Experience elevated travel comfort with the American Tourister Brett 4.0 laptop carry bags, expertly designed for up to 15.4-inch laptops with ergonomic precision. Boasting Ergo-on-the-go back and shoulders for optimal support, three spacious compartments, and two zippered pockets for effortless organization, these bags seamlessly combine style and functionality. Crafted with eco-friendly Material lining, a protective rain cover, and a microfleece pocket for essentials like glasses, they ensure superior load-bearing capability and feature Air Groove Plus Technology for enhanced back mesh padding.",
+    description:
+      "Experience elevated travel comfort with the American Tourister Brett 4.0 laptop carry bags, expertly designed for up to 15.4-inch laptops with ergonomic precision. Boasting Ergo-on-the-go back and shoulders for optimal support, three spacious compartments, and two zippered pockets for effortless organization, these bags seamlessly combine style and functionality. Crafted with eco-friendly Material lining, a protective rain cover, and a microfleece pocket for essentials like glasses, they ensure superior load-bearing capability and feature Air Groove Plus Technology for enhanced back mesh padding.",
     price: 2840,
     image: require("@/assets/images/brett.png"),
     category: "Backpacks",
@@ -96,14 +100,55 @@ export const PRODUCTS: Product[] = [
   {
     id: "memory",
     name: "Mermory Foam Pillow",
-    description: "American Tourister offers a range of travel pillows designed for comfort and convenience on the go. Their travel pillows are made with high-quality materials such as soft fleece, memory foam, and microbeads that mold to the shape of your neck and provide support while you sleep. The pillows are lightweight and compact, making them easy to pack in your luggage or carry-on bag. They also come in various colors and designs to suit your personal style. Whether you're traveling by plane, car, or train, American Tourister travel pillows will help you arrive at your destination feeling rested and refreshed.",
+    description:
+      "American Tourister offers a range of travel pillows designed for comfort and convenience on the go. Their travel pillows are made with high-quality materials such as soft fleece, memory foam, and microbeads that mold to the shape of your neck and provide support while you sleep. The pillows are lightweight and compact, making them easy to pack in your luggage or carry-on bag. They also come in various colors and designs to suit your personal style. Whether you're traveling by plane, car, or train, American Tourister travel pillows will help you arrive at your destination feeling rested and refreshed.",
     price: 1192,
     image: require("@/assets/images/pillow.png"),
     category: "Accessories",
     rating: 4.6,
     reviews: 78,
     sizes: ["31cm"],
-   
+  },
+  {
+    id: "foldable-backpack",
+    name: "Foldable Backpack",
+    description:
+      "A foldable backpack that’s perfect as a travel accessory or an extra bag for sudden carry-on needs Made to fold down compactly when not in use saving space in your suitcase or luggage.",
+    price: 1160,
+    image: require("@/assets/images/foldable-backpack.png"),
+    category: "Backpacks",
+    rating: 4.6,
+    reviews: 78,
+    sizes: ["29cm"],
+  },
+  {
+    id: "tsalock",
+    name: "3 Dial TSA Combination Lock",
+    description:
+      "American Tourister offers a range of travel locks that provide security and peace of mind while traveling. These locks come in various sizes and styles, from cable locks to combination locks, all designed to secure your luggage from unwanted intruders. The locks are made with durable materials, such as zinc alloy, and are easy to use with straightforward instructions included. Some locks are TSA-approved, allowing TSA agents to open and inspect your luggage without damaging the lock. American Tourister's travel locks are an essential accessory for any traveler who values the security of their belongings during transit",
+    price: 640,
+    image: require("@/assets/images/tsalock.png"),
+    category: "Accessories",
+    rating: 3.8,
+    reviews: 4,
+    sizes: ["3.2cm"],
+  },
+  {
+    id: "astic",
+    name: "ASTIC",
+    description:
+      "Spacious & Travel-Ready – Designed to hold travel essentials with ample capacity (e.g., around ~70 L for the larger 62 cm size) — great for weekend trips, gym, or travel adventures.",
+    price: 1895,
+    image: require("@/assets/images/astic.png"),
+    category: "Duffles",
+    rating: 4.9,
+    reviews: 210,
+    sizes: ["52cm", "62cm"],
+    sizePrices: {
+      "52cm": 1895,
+      "62cm": 2085,
+      
+    },
   },
 ];
 
@@ -111,6 +156,7 @@ export const CATEGORIES = [
   "All",
   "Hard Luggage",
   "Soft Luggage",
+  "Duffles",
   "Backpacks",
   "Accessories",
 ];
