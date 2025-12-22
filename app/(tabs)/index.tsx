@@ -1,74 +1,483 @@
-import { CategoryTab } from "@/components/CategoryTab";
 import { ProductCard } from "@/components/ProductCard";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { IconSymbol } from "@/components/ui/icon-symbol";
 import { PRODUCTS } from "@/constants/products";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Image } from "expo-image";
-import React, { useState } from "react";
+import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
+  Alert,
   Dimensions,
+  Modal,
   ScrollView,
   StyleSheet,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 
 const { width } = Dimensions.get("window");
 
-export default function HomeScreen() {
-  const [selectedCategory, setSelectedCategory] = useState("All");
+interface Sale {
+  id: string;
+  productId: string;
+  productName: string;
+  productImage: any;
+  category: string;
+  amount: number;
+  size: string;
+  date: string;
+  time: string;
+  color: string;
+}
 
-  const featuredProducts = PRODUCTS.filter(
-    (p) =>
-      p.isFeatured &&
-      (selectedCategory === "All" || p.category === selectedCategory)
+interface Order {
+  id: string;
+  productId: string;
+  productName: string;
+  productImage: any;
+  category: string;
+  count: number;
+  amount: number;
+  size: string;
+  date: string;
+  time: string;
+  color: string;
+}
+
+const CATEGORY_DATA = [
+  { name: "Hard Luggage", icon: "suitcase.fill", color: "#FF3B30" },
+  { name: "Soft Luggage", icon: "bag.fill", color: "#007AFF" },
+  { name: "Backpacks", icon: "backpack.fill", color: "#34C759" },
+];
+
+const SALES_STORAGE_KEY = "@sales_data";
+const ORDERS_STORAGE_KEY = "@orders_data";
+
+const getCurrentDate = () => {
+  const now = new Date();
+  return now.toISOString().split("T")[0]; // YYYY-MM-DD
+};
+
+const getCurrentTime = () => {
+  const now = new Date();
+  return now.toTimeString().split(" ")[0].substring(0, 5); // HH:MM
+};
+
+const formatDate = (dateStr: string) => {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+};
+
+const formatTime = (timeStr: string) => {
+  const [hours, minutes] = timeStr.split(":");
+  const date = new Date();
+  date.setHours(parseInt(hours), parseInt(minutes));
+  return date.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+};
+
+export default function HomeScreen() {
+  const router = useRouter();
+  const featuredProducts = PRODUCTS.filter((p) => p.isFeatured);
+
+  // Sales State
+  const [sales, setSales] = useState<Sale[]>([]);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isClearModalVisible, setIsClearModalVisible] = useState(false);
+
+  // New Sale State
+  const [selectedProductId, setSelectedProductId] = useState(PRODUCTS[0].id);
+  const [selectedSize, setSelectedSize] = useState(PRODUCTS[0].sizes[0]);
+  const [newSaleDate, setNewSaleDate] = useState(getCurrentDate());
+  const [newSaleTime, setNewSaleTime] = useState(getCurrentTime());
+  const [pendingSales, setPendingSales] = useState<Sale[]>([]);
+
+  // Orders State
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [isOrderModalVisible, setIsOrderModalVisible] = useState(false);
+  const [isClearOrdersModalVisible, setIsClearOrdersModalVisible] =
+    useState(false);
+
+  // New Order State
+  const [selectedOrderProductId, setSelectedOrderProductId] = useState(
+    PRODUCTS[0].id
   );
-  const filteredProducts =
-    selectedCategory === "All"
-      ? PRODUCTS
-      : PRODUCTS.filter((p) => p.category === selectedCategory);
+  const [selectedOrderSize, setSelectedOrderSize] = useState(
+    PRODUCTS[0].sizes[0]
+  );
+  const [newOrderCount, setNewOrderCount] = useState("");
+  const [newOrderDate, setNewOrderDate] = useState(getCurrentDate());
+  const [newOrderTime, setNewOrderTime] = useState(getCurrentTime());
+  const [pendingOrders, setPendingOrders] = useState<Order[]>([]);
+
+  // Load data from AsyncStorage on mount
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [storedSales, storedOrders] = await Promise.all([
+          AsyncStorage.getItem(SALES_STORAGE_KEY),
+          AsyncStorage.getItem(ORDERS_STORAGE_KEY),
+        ]);
+        if (storedSales) setSales(JSON.parse(storedSales));
+        if (storedOrders) setOrders(JSON.parse(storedOrders));
+      } catch (error) {
+        console.error("Failed to load data", error);
+      }
+    };
+    loadData();
+  }, []);
+
+  // Persistence Helpers
+  const saveSalesToStorage = async (updatedSales: Sale[]) => {
+    try {
+      await AsyncStorage.setItem(
+        SALES_STORAGE_KEY,
+        JSON.stringify(updatedSales)
+      );
+    } catch (error) {
+      console.error("Failed to save sales data", error);
+    }
+  };
+
+  const saveOrdersToStorage = async (updatedOrders: Order[]) => {
+    try {
+      await AsyncStorage.setItem(
+        ORDERS_STORAGE_KEY,
+        JSON.stringify(updatedOrders)
+      );
+    } catch (error) {
+      console.error("Failed to save orders data", error);
+    }
+  };
+
+  const handleCategoryPress = (category: string) => {
+    router.push({
+      pathname: "/explore",
+      params: { category },
+    });
+  };
+
+  // Sales Handlers
+  const handleAddToPendingSale = () => {
+    const product = PRODUCTS.find((p) => p.id === selectedProductId)!;
+    const amount = product.sizePrices?.[selectedSize] || product.price;
+    const categoryInfo =
+      CATEGORY_DATA.find((c) => c.name === product.category) ||
+      CATEGORY_DATA[0];
+
+    const newSale: Sale = {
+      id: Date.now().toString(),
+      productId: product.id,
+      productName: product.name,
+      productImage: product.image,
+      category: product.category,
+      amount,
+      size: selectedSize,
+      date: newSaleDate,
+      time: newSaleTime,
+      color: categoryInfo.color,
+    };
+
+    setPendingSales([...pendingSales, newSale]);
+  };
+
+  const handleRemovePendingSale = (id: string) => {
+    setPendingSales(pendingSales.filter((s) => s.id !== id));
+  };
+
+  const handleSaveAllSales = async () => {
+    if (pendingSales.length === 0) {
+      Alert.alert("Empty List", "Please add at least one product to the list.");
+      return;
+    }
+    const updatedSales = [...pendingSales, ...sales];
+    setSales(updatedSales);
+    await saveSalesToStorage(updatedSales);
+
+    setIsModalVisible(false);
+    setPendingSales([]);
+    setSelectedProductId(PRODUCTS[0].id);
+    setSelectedSize(PRODUCTS[0].sizes[0]);
+    setNewSaleDate(getCurrentDate());
+    setNewSaleTime(getCurrentTime());
+  };
+
+  const handleClearSales = async () => {
+    setSales([]);
+    await saveSalesToStorage([]);
+    setIsClearModalVisible(false);
+  };
+
+  // Orders Handlers
+  const handleAddToPendingOrder = () => {
+    const count = parseInt(newOrderCount);
+    if (isNaN(count) || count <= 0) {
+      Alert.alert("Invalid Input", "Please enter a valid order count.");
+      return;
+    }
+    const product = PRODUCTS.find((p) => p.id === selectedOrderProductId)!;
+    const unitPrice = product.sizePrices?.[selectedOrderSize] || product.price;
+    const totalAmount = unitPrice * count;
+    const categoryInfo =
+      CATEGORY_DATA.find((c) => c.name === product.category) ||
+      CATEGORY_DATA[0];
+
+    const newOrder: Order = {
+      id: Date.now().toString(),
+      productId: product.id,
+      productName: product.name,
+      productImage: product.image,
+      category: product.category,
+      count,
+      amount: totalAmount,
+      size: selectedOrderSize,
+      date: newOrderDate,
+      time: newOrderTime,
+      color: categoryInfo.color,
+    };
+
+    setPendingOrders([...pendingOrders, newOrder]);
+    setNewOrderCount(""); // Reset count for next item
+  };
+
+  const handleRemovePendingOrder = (id: string) => {
+    setPendingOrders(pendingOrders.filter((o) => o.id !== id));
+  };
+
+  const handleSaveAllOrders = async () => {
+    if (pendingOrders.length === 0) {
+      Alert.alert("Empty List", "Please add at least one product to the list.");
+      return;
+    }
+    const updatedOrders = [...pendingOrders, ...orders];
+    setOrders(updatedOrders);
+    await saveOrdersToStorage(updatedOrders);
+
+    setIsOrderModalVisible(false);
+    setPendingOrders([]);
+    setNewOrderCount("");
+    setSelectedOrderProductId(PRODUCTS[0].id);
+    setSelectedOrderSize(PRODUCTS[0].sizes[0]);
+    setNewOrderDate(getCurrentDate());
+    setNewOrderTime(getCurrentTime());
+  };
+
+  const handleClearOrders = async () => {
+    setOrders([]);
+    await saveOrdersToStorage([]);
+    setIsClearOrdersModalVisible(false);
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 0,
+    }).format(value);
+  };
+
+  const selectedProduct = PRODUCTS.find((p) => p.id === selectedProductId)!;
+  const selectedOrderProduct = PRODUCTS.find(
+    (p) => p.id === selectedOrderProductId
+  )!;
 
   return (
     <ThemedView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Header / Hero */}
-        <View style={styles.heroContainer}>
-          <Image
-            source={require("@/assets/images/segno4.0.png")}
-            style={styles.heroImage}
-            contentFit="cover"
-          />
-          <View style={styles.logoContainer}>
-            <Image
-              source={require("@/assets/American_Tourister_logo.svg")}
-              style={styles.logo}
-              contentFit="contain"
+        {/* Dashboard Header */}
+        <View style={styles.dashboardHeader}>
+          <View style={styles.headerTop}>
+            <View>
+              <ThemedText style={styles.welcomeText}>Welcome back,</ThemedText>
+              <ThemedText type="title" style={styles.userName}>
+                Traveler!
+              </ThemedText>
+            </View>
+            <View style={styles.logoContainer}>
+              <Image
+                source={require("@/assets/American_Tourister_logo.svg")}
+                style={styles.logo}
+                contentFit="contain"
+              />
+            </View>
+          </View>
+
+          <View style={styles.searchContainer}>
+            <IconSymbol
+              name="magnifyingglass"
+              size={20}
+              color="rgba(255,255,255,0.5)"
+            />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search your next adventure..."
+              placeholderTextColor="rgba(255,255,255,0.5)"
+              editable={false} // Just for UI in dashboard
             />
           </View>
-          <View style={styles.heroOverlay}>
-            <ThemedText type="title" style={styles.heroTitle}>
-              American Tourister
-            </ThemedText>
-            <ThemedText style={styles.heroSubtitle}>
-              Ready for your next adventure?
-            </ThemedText>
+
+          <View style={styles.quickActions}>
+            <TouchableOpacity
+              style={styles.actionCard}
+              onPress={() => handleCategoryPress("Hard Luggage")}
+            >
+              <View style={[styles.iconCircle, { backgroundColor: "#FF3B30" }]}>
+                <IconSymbol name="suitcase.fill" size={24} color="#FFF" />
+              </View>
+              <ThemedText style={styles.actionLabel}>Hard Luggage</ThemedText>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionCard}
+              onPress={() => handleCategoryPress("Soft Luggage")}
+            >
+              <View style={[styles.iconCircle, { backgroundColor: "#007AFF" }]}>
+                <IconSymbol name="bag.fill" size={24} color="#FFF" />
+              </View>
+              <ThemedText style={styles.actionLabel}>Soft Luggage</ThemedText>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionCard}
+              onPress={() => handleCategoryPress("Backpacks")}
+            >
+              <View style={[styles.iconCircle, { backgroundColor: "#34C759" }]}>
+                <IconSymbol name="backpack.fill" size={24} color="#FFF" />
+              </View>
+              <ThemedText style={styles.actionLabel}>Backpacks</ThemedText>
+            </TouchableOpacity>
           </View>
         </View>
 
-        {/* Categories */}
-        <CategoryTab
-          selectedCategory={selectedCategory}
-          onSelectCategory={setSelectedCategory}
-        />
+        {/* Today's Sales Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <ThemedText type="subtitle">Today's Sales</ThemedText>
+            <View style={styles.headerActions}>
+              <TouchableOpacity
+                onPress={() => setIsModalVisible(true)}
+                style={styles.iconButton}
+              >
+                <IconSymbol name="plus.circle.fill" size={20} color="#007AFF" />
+              </TouchableOpacity>
+              {sales.length > 0 && (
+                <TouchableOpacity
+                  onPress={() => setIsClearModalVisible(true)}
+                  style={[styles.iconButton, { marginLeft: 12 }]}
+                >
+                  <IconSymbol name="trash.fill" size={20} color="#FF3B30" />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+          {sales.length > 0 ? (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.salesScroll}
+            >
+              {sales.map((sale) => (
+                <View key={sale.id} style={styles.salesCard}>
+                  <View style={styles.salesImageContainer}>
+                    <Image
+                      source={sale.productImage}
+                      style={styles.salesProductImage}
+                      contentFit="contain"
+                    />
+                  </View>
+                  <View style={styles.salesInfo}>
+                    <ThemedText style={styles.salesCategory}>
+                      {sale.productName} • {sale.size}
+                    </ThemedText>
+                    <ThemedText style={styles.salesAmount}>
+                      {formatCurrency(sale.amount)}
+                    </ThemedText>
+                    <ThemedText style={styles.salesTimestamp}>
+                      {formatDate(sale.date)} • {formatTime(sale.time)}
+                    </ThemedText>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+          ) : (
+            <View style={styles.emptySales}>
+              <ThemedText style={styles.emptySalesText}>
+                No sales recorded today.
+              </ThemedText>
+            </View>
+          )}
+        </View>
+
+        {/* Today's Orders Section */}
+        <View style={[styles.section, { paddingTop: 0 }]}>
+          <View style={styles.sectionHeader}>
+            <ThemedText type="subtitle">Today's Orders</ThemedText>
+            <View style={styles.headerActions}>
+              <TouchableOpacity
+                onPress={() => setIsOrderModalVisible(true)}
+                style={styles.iconButton}
+              >
+                <IconSymbol name="plus.circle.fill" size={20} color="#34C759" />
+              </TouchableOpacity>
+              {orders.length > 0 && (
+                <TouchableOpacity
+                  onPress={() => setIsClearOrdersModalVisible(true)}
+                  style={[styles.iconButton, { marginLeft: 12 }]}
+                >
+                  <IconSymbol name="trash.fill" size={20} color="#FF3B30" />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+          {orders.length > 0 ? (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.salesScroll}
+            >
+              {orders.map((order) => (
+                <View key={order.id} style={styles.salesCard}>
+                  <View style={styles.salesImageContainer}>
+                    <Image
+                      source={order.productImage}
+                      style={styles.salesProductImage}
+                      contentFit="contain"
+                    />
+                  </View>
+                  <View style={styles.salesInfo}>
+                    <ThemedText style={styles.salesCategory}>
+                      {order.productName} • {order.size}
+                    </ThemedText>
+                    <ThemedText style={styles.salesAmount}>
+                      {order.count} Orders • {formatCurrency(order.amount)}
+                    </ThemedText>
+                    <ThemedText style={styles.salesTimestamp}>
+                      {formatDate(order.date)} • {formatTime(order.time)}
+                    </ThemedText>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+          ) : (
+            <View style={styles.emptySales}>
+              <ThemedText style={styles.emptySalesText}>
+                No orders recorded today.
+              </ThemedText>
+            </View>
+          )}
+        </View>
 
         {/* Featured Section */}
         {featuredProducts.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <ThemedText type="subtitle">Featured</ThemedText>
-              <TouchableOpacity>
-                <ThemedText style={styles.seeAll}>See All</ThemedText>
-              </TouchableOpacity>
             </View>
             <ScrollView
               horizontal
@@ -83,19 +492,469 @@ export default function HomeScreen() {
             </ScrollView>
           </View>
         )}
+      </ScrollView>
 
-        {/* Product Grid */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <ThemedText type="subtitle">{selectedCategory} Products</ThemedText>
-          </View>
-          <View style={styles.grid}>
-            {filteredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
+      {/* Add Sale Modal */}
+      <Modal
+        visible={isModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setIsModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { maxHeight: "90%" }]}>
+            <ThemedText type="subtitle" style={styles.modalTitle}>
+              Add New Sales
+            </ThemedText>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <ThemedText style={styles.inputLabel}>Select Product</ThemedText>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.productPickerScroll}
+                contentContainerStyle={styles.productPickerContent}
+              >
+                {PRODUCTS.map((product) => (
+                  <TouchableOpacity
+                    key={product.id}
+                    style={[
+                      styles.productPickerItem,
+                      selectedProductId === product.id &&
+                        styles.productPickerItemActive,
+                    ]}
+                    onPress={() => {
+                      setSelectedProductId(product.id);
+                      setSelectedSize(product.sizes[0]);
+                    }}
+                  >
+                    <Image
+                      source={product.image}
+                      style={styles.productPickerImage}
+                      contentFit="contain"
+                    />
+                    <ThemedText
+                      style={[
+                        styles.productPickerName,
+                        selectedProductId === product.id &&
+                          styles.productPickerTextActive,
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {product.name}
+                    </ThemedText>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+
+              <ThemedText style={styles.inputLabel}>Select Size</ThemedText>
+              <View style={styles.categoryPicker}>
+                {selectedProduct.sizes.map((size) => (
+                  <TouchableOpacity
+                    key={size}
+                    style={[
+                      styles.pickerItem,
+                      selectedSize === size && styles.pickerItemActive,
+                    ]}
+                    onPress={() => setSelectedSize(size)}
+                  >
+                    <ThemedText
+                      style={[
+                        styles.pickerText,
+                        selectedSize === size && styles.pickerTextActive,
+                      ]}
+                    >
+                      {size}
+                    </ThemedText>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <View style={styles.modalInputRow}>
+                <View style={{ flex: 1 }}>
+                  <ThemedText style={styles.inputLabel}>Price</ThemedText>
+                  <View style={styles.priceDisplay}>
+                    <ThemedText style={styles.priceDisplayText}>
+                      {formatCurrency(
+                        selectedProduct.sizePrices?.[selectedSize] ||
+                          selectedProduct.price
+                      )}
+                    </ThemedText>
+                  </View>
+                </View>
+                <TouchableOpacity
+                  style={styles.addToListButton}
+                  onPress={handleAddToPendingSale}
+                >
+                  <IconSymbol name="plus" size={20} color="#FFF" />
+                  <ThemedText style={styles.addToListText}>
+                    Add to List
+                  </ThemedText>
+                </TouchableOpacity>
+              </View>
+
+              {pendingSales.length > 0 && (
+                <View style={styles.pendingSection}>
+                  <ThemedText style={styles.inputLabel}>
+                    Pending Items ({pendingSales.length})
+                  </ThemedText>
+                  {pendingSales.map((item) => (
+                    <View key={item.id} style={styles.pendingItem}>
+                      <View style={styles.pendingItemInfo}>
+                        <ThemedText
+                          style={styles.pendingItemName}
+                          numberOfLines={1}
+                        >
+                          {item.productName} • {item.size}
+                        </ThemedText>
+                        <ThemedText style={styles.pendingItemPrice}>
+                          {formatCurrency(item.amount)}
+                        </ThemedText>
+                      </View>
+                      <TouchableOpacity
+                        onPress={() => handleRemovePendingSale(item.id)}
+                      >
+                        <IconSymbol
+                          name="trash.fill"
+                          size={18}
+                          color="#FF3B30"
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              <View style={styles.modalInputRow}>
+                <View style={{ flex: 1 }}>
+                  <ThemedText style={styles.inputLabel}>Date</ThemedText>
+                  <TextInput
+                    style={styles.modalInput}
+                    placeholder="YYYY-MM-DD"
+                    placeholderTextColor="rgba(255,255,255,0.3)"
+                    value={newSaleDate}
+                    onChangeText={setNewSaleDate}
+                  />
+                </View>
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <ThemedText style={styles.inputLabel}>Time</ThemedText>
+                  <TextInput
+                    style={styles.modalInput}
+                    placeholder="HH:MM"
+                    placeholderTextColor="rgba(255,255,255,0.3)"
+                    value={newSaleTime}
+                    onChangeText={setNewSaleTime}
+                  />
+                </View>
+              </View>
+            </ScrollView>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => {
+                  setIsModalVisible(false);
+                  setPendingSales([]);
+                }}
+              >
+                <ThemedText style={styles.buttonText}>Cancel</ThemedText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.addButton]}
+                onPress={handleSaveAllSales}
+              >
+                <ThemedText style={styles.buttonText}>Save All</ThemedText>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
-      </ScrollView>
+      </Modal>
+
+      {/* Add Order Modal */}
+      <Modal
+        visible={isOrderModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setIsOrderModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { maxHeight: "90%" }]}>
+            <ThemedText type="subtitle" style={styles.modalTitle}>
+              Add New Orders
+            </ThemedText>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <ThemedText style={styles.inputLabel}>Select Product</ThemedText>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.productPickerScroll}
+                contentContainerStyle={styles.productPickerContent}
+              >
+                {PRODUCTS.map((product) => (
+                  <TouchableOpacity
+                    key={product.id}
+                    style={[
+                      styles.productPickerItem,
+                      selectedOrderProductId === product.id &&
+                        styles.productPickerItemActive,
+                    ]}
+                    onPress={() => {
+                      setSelectedOrderProductId(product.id);
+                      setSelectedOrderSize(product.sizes[0]);
+                    }}
+                  >
+                    <Image
+                      source={product.image}
+                      style={styles.productPickerImage}
+                      contentFit="contain"
+                    />
+                    <ThemedText
+                      style={[
+                        styles.productPickerName,
+                        selectedOrderProductId === product.id &&
+                          styles.productPickerTextActive,
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {product.name}
+                    </ThemedText>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+
+              <ThemedText style={styles.inputLabel}>Select Size</ThemedText>
+              <View style={styles.categoryPicker}>
+                {selectedOrderProduct.sizes.map((size) => (
+                  <TouchableOpacity
+                    key={size}
+                    style={[
+                      styles.pickerItem,
+                      selectedOrderSize === size && styles.pickerItemActive,
+                    ]}
+                    onPress={() => setSelectedOrderSize(size)}
+                  >
+                    <ThemedText
+                      style={[
+                        styles.pickerText,
+                        selectedOrderSize === size && styles.pickerTextActive,
+                      ]}
+                    >
+                      {size}
+                    </ThemedText>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <View style={styles.modalInputRow}>
+                <View style={{ flex: 1 }}>
+                  <ThemedText style={styles.inputLabel}>Quantity</ThemedText>
+                  <TextInput
+                    style={styles.modalInput}
+                    placeholder="Count"
+                    placeholderTextColor="rgba(255,255,255,0.3)"
+                    keyboardType="numeric"
+                    value={newOrderCount}
+                    onChangeText={setNewOrderCount}
+                  />
+                </View>
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <ThemedText style={styles.inputLabel}>Total</ThemedText>
+                  <View style={styles.priceDisplay}>
+                    <ThemedText
+                      style={[styles.priceDisplayText, { fontSize: 16 }]}
+                    >
+                      {formatCurrency(
+                        (selectedOrderProduct.sizePrices?.[selectedOrderSize] ||
+                          selectedOrderProduct.price) *
+                          (parseInt(newOrderCount) || 0)
+                      )}
+                    </ThemedText>
+                  </View>
+                </View>
+              </View>
+
+              <TouchableOpacity
+                style={[
+                  styles.addToListButton,
+                  { alignSelf: "center", width: "100%", marginBottom: 24 },
+                ]}
+                onPress={handleAddToPendingOrder}
+              >
+                <IconSymbol name="plus" size={20} color="#FFF" />
+                <ThemedText style={styles.addToListText}>
+                  Add to List
+                </ThemedText>
+              </TouchableOpacity>
+
+              {pendingOrders.length > 0 && (
+                <View style={styles.pendingSection}>
+                  <ThemedText style={styles.inputLabel}>
+                    Pending Items ({pendingOrders.length})
+                  </ThemedText>
+                  {pendingOrders.map((item) => (
+                    <View key={item.id} style={styles.pendingItem}>
+                      <View style={styles.pendingItemInfo}>
+                        <ThemedText
+                          style={styles.pendingItemName}
+                          numberOfLines={1}
+                        >
+                          {item.productName} • {item.size}
+                        </ThemedText>
+                        <ThemedText style={styles.pendingItemPrice}>
+                          {item.count} Units • {formatCurrency(item.amount)}
+                        </ThemedText>
+                      </View>
+                      <TouchableOpacity
+                        onPress={() => handleRemovePendingOrder(item.id)}
+                      >
+                        <IconSymbol
+                          name="trash.fill"
+                          size={18}
+                          color="#FF3B30"
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              <View style={styles.modalInputRow}>
+                <View style={{ flex: 1 }}>
+                  <ThemedText style={styles.inputLabel}>Date</ThemedText>
+                  <TextInput
+                    style={styles.modalInput}
+                    placeholder="YYYY-MM-DD"
+                    placeholderTextColor="rgba(255,255,255,0.3)"
+                    value={newOrderDate}
+                    onChangeText={setNewOrderDate}
+                  />
+                </View>
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <ThemedText style={styles.inputLabel}>Time</ThemedText>
+                  <TextInput
+                    style={styles.modalInput}
+                    placeholder="HH:MM"
+                    placeholderTextColor="rgba(255,255,255,0.3)"
+                    value={newOrderTime}
+                    onChangeText={setNewOrderTime}
+                  />
+                </View>
+              </View>
+            </ScrollView>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => {
+                  setIsOrderModalVisible(false);
+                  setPendingOrders([]);
+                }}
+              >
+                <ThemedText style={styles.buttonText}>Cancel</ThemedText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.modalButton,
+                  styles.addButton,
+                  { backgroundColor: "#34C759" },
+                ]}
+                onPress={handleSaveAllOrders}
+              >
+                <ThemedText style={styles.buttonText}>Save All</ThemedText>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Custom Clear Confirmation Modal (Sales) */}
+      <Modal
+        visible={isClearModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsClearModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, styles.clearModalContent]}>
+            <View style={styles.warningIconContainer}>
+              <IconSymbol
+                name="exclamationmark.triangle.fill"
+                size={40}
+                color="#FF3B30"
+              />
+            </View>
+
+            <ThemedText type="subtitle" style={styles.modalTitle}>
+              Clear All Sales?
+            </ThemedText>
+
+            <ThemedText style={styles.modalMessage}>
+              This will permanently remove all sales recorded. This action
+              cannot be undone.
+            </ThemedText>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => setIsClearModalVisible(false)}
+              >
+                <ThemedText style={styles.buttonText}>Cancel</ThemedText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.confirmButton]}
+                onPress={handleClearSales}
+              >
+                <ThemedText style={styles.buttonText}>Clear All</ThemedText>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Custom Clear Confirmation Modal (Orders) */}
+      <Modal
+        visible={isClearOrdersModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsClearOrdersModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, styles.clearModalContent]}>
+            <View style={styles.warningIconContainer}>
+              <IconSymbol
+                name="exclamationmark.triangle.fill"
+                size={40}
+                color="#FF3B30"
+              />
+            </View>
+
+            <ThemedText type="subtitle" style={styles.modalTitle}>
+              Clear All Orders?
+            </ThemedText>
+
+            <ThemedText style={styles.modalMessage}>
+              This will permanently remove all orders recorded. This action
+              cannot be undone.
+            </ThemedText>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => setIsClearOrdersModalVisible(false)}
+              >
+                <ThemedText style={styles.buttonText}>Cancel</ThemedText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.confirmButton]}
+                onPress={handleClearOrders}
+              >
+                <ThemedText style={styles.buttonText}>Clear All</ThemedText>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ThemedView>
   );
 }
@@ -104,59 +963,81 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  heroContainer: {
-    height: 300,
-    width: "100%",
-    position: "relative",
-  },
-  heroImage: {
-    width: "100%",
-    height: "100%",
-  },
-  heroOverlay: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
+  dashboardHeader: {
     padding: 24,
-    backgroundColor: "rgba(0,0,0,0.4)",
+    paddingTop: 60,
+    backgroundColor: "#1A1A1A",
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
   },
-  logoContainer: {
-    position: "absolute",
-    top: 50,
-    right: 20,
-    zIndex: 10,
+  headerTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 24,
   },
-  heroTitle: {
-    color: "#FFF",
-    fontSize: 32,
+  welcomeText: {
+    fontSize: 16,
+    opacity: 0.7,
+  },
+  userName: {
+    fontSize: 28,
     fontWeight: "bold",
   },
   logo: {
-    width: 120,
-    height: 40,
-    marginBottom: 12,
+    width: 100,
+    height: 30,
   },
-  heroSubtitle: {
+  logoContainer: {
+    backgroundColor: "rgba(255,255,255,0.9)",
+    padding: 6,
+    borderRadius: 8,
+  },
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.05)",
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    height: 56,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: 12,
     color: "#FFF",
     fontSize: 16,
-    opacity: 0.9,
-    marginTop: 4,
-    marginBottom: 16,
   },
-  heroButton: {
-    backgroundColor: "#007AFF",
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignSelf: "flex-start",
+  quickActions: {
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
-  heroButtonText: {
-    color: "#FFF",
+  actionCard: {
+    alignItems: "center",
+    width: (width - 80) / 3,
+  },
+  iconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  actionLabel: {
+    fontSize: 12,
     fontWeight: "bold",
+    textAlign: "center",
   },
   section: {
-    padding: 16,
+    padding: 24,
   },
   sectionHeader: {
     flexDirection: "row",
@@ -164,9 +1045,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 16,
   },
-  seeAll: {
-    color: "#007AFF",
-    fontSize: 14,
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  iconButton: {
+    padding: 8,
+    backgroundColor: "rgba(255,255,255,0.05)",
+    borderRadius: 8,
   },
   featuredScroll: {
     gap: 16,
@@ -174,9 +1060,268 @@ const styles = StyleSheet.create({
   featuredItem: {
     width: width * 0.45,
   },
-  grid: {
+  salesScroll: {
+    gap: 12,
+  },
+  salesCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.05)",
+    padding: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+    minWidth: 240,
+  },
+  salesImageContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 8,
+    backgroundColor: "#FFF",
+    padding: 4,
+    marginRight: 12,
+  },
+  salesProductImage: {
+    width: "100%",
+    height: "100%",
+  },
+  salesIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  salesInfo: {
+    justifyContent: "center",
+    flex: 1,
+  },
+  salesCategory: {
+    fontSize: 10,
+    fontWeight: "bold",
+    opacity: 0.8,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  salesAmount: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  salesTimestamp: {
+    fontSize: 10,
+    fontWeight: "600",
+    opacity: 0.6,
+    marginTop: 2,
+  },
+  emptySales: {
+    padding: 20,
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.02)",
+    borderRadius: 16,
+    borderStyle: "dashed",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+  },
+  emptySalesText: {
+    opacity: 0.4,
+    fontSize: 14,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  modalContent: {
+    width: "100%",
+    backgroundColor: "#1A1A1A",
+    borderRadius: 24,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+  },
+  modalTitle: {
+    marginBottom: 24,
+    textAlign: "center",
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 12,
+    opacity: 0.7,
+  },
+  categoryPicker: {
     flexDirection: "row",
     flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 24,
+  },
+  pickerItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.05)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+  },
+  pickerItemActive: {
+    backgroundColor: "#007AFF",
+    borderColor: "#007AFF",
+  },
+  pickerText: {
+    fontSize: 14,
+  },
+  pickerTextActive: {
+    fontWeight: "bold",
+    color: "#FFF",
+  },
+  productPickerScroll: {
+    marginBottom: 24,
+  },
+  productPickerContent: {
+    gap: 12,
+  },
+  productPickerItem: {
+    width: 100,
+    padding: 8,
+    borderRadius: 16,
+    backgroundColor: "rgba(255,255,255,0.05)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+    alignItems: "center",
+  },
+  productPickerItemActive: {
+    backgroundColor: "rgba(0, 122, 255, 0.1)",
+    borderColor: "#007AFF",
+  },
+  productPickerImage: {
+    width: 60,
+    height: 60,
+    marginBottom: 8,
+  },
+  productPickerName: {
+    fontSize: 10,
+    textAlign: "center",
+    opacity: 0.7,
+  },
+  productPickerTextActive: {
+    fontWeight: "bold",
+    opacity: 1,
+    color: "#007AFF",
+  },
+  priceDisplay: {
+    backgroundColor: "rgba(255,255,255,0.05)",
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+    justifyContent: "center",
+  },
+  priceDisplayText: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#34C759",
+  },
+  addToListButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#007AFF",
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginLeft: 12,
+    height: 56,
+  },
+  addToListText: {
+    color: "#FFF",
+    fontWeight: "bold",
+    marginLeft: 8,
+  },
+  pendingSection: {
+    marginBottom: 24,
+    backgroundColor: "rgba(255,255,255,0.02)",
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.05)",
+  },
+  pendingItem: {
+    flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.05)",
+  },
+  pendingItemInfo: {
+    flex: 1,
+  },
+  pendingItemName: {
+    fontSize: 14,
+    fontWeight: "bold",
+  },
+  pendingItemPrice: {
+    fontSize: 12,
+    opacity: 0.6,
+    marginTop: 2,
+  },
+  modalInputRow: {
+    flexDirection: "row",
+    marginBottom: 24,
+    alignItems: "flex-end",
+  },
+  modalInput: {
+    backgroundColor: "rgba(255,255,255,0.05)",
+    borderRadius: 12,
+    padding: 16,
+    color: "#FFF",
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+  },
+  modalButtons: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 12,
+  },
+  modalButton: {
+    flex: 1,
+    height: 50,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  cancelButton: {
+    backgroundColor: "rgba(255,255,255,0.1)",
+  },
+  addButton: {
+    backgroundColor: "#007AFF",
+  },
+  buttonText: {
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  clearModalContent: {
+    alignItems: "center",
+    maxWidth: 340,
+  },
+  warningIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "rgba(255, 59, 48, 0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  modalMessage: {
+    textAlign: "center",
+    opacity: 0.6,
+    lineHeight: 20,
+    marginBottom: 32,
+  },
+  confirmButton: {
+    backgroundColor: "#FF3B30",
   },
 });

@@ -22,6 +22,12 @@ const MAPPING: IconMapping = {
   "person.fill": "person",
   "chevron.left.forwardslash.chevron.right": "code",
   "chevron.right": "chevron-right",
+  "suitcase.fill": "business-center",
+  "backpack.fill": "backpack",
+  "bag.fill": "local-mall",
+  "plus.circle.fill": "add-circle",
+  "trash.fill": "delete",
+  "exclamationmark.triangle.fill": "warning",
 };
 
 /**
