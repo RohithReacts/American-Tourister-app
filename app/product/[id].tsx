@@ -3,6 +3,7 @@ import { ThemedView } from "@/components/themed-view";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { PRODUCTS } from "@/constants/products";
 import { useCart } from "@/context/CartContext";
+import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
@@ -34,9 +35,9 @@ export default function ProductDetailsScreen() {
   }
 
   const handleAddToCart = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     addToCart(product, selectedSize);
     setAddedToCart(true);
-    setTimeout(() => setAddedToCart(false), 2000);
   };
 
   return (
@@ -100,7 +101,10 @@ export default function ProductDetailsScreen() {
                     styles.sizeOption,
                     selectedSize === size && styles.selectedSizeOption,
                   ]}
-                  onPress={() => setSelectedSize(size)}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setSelectedSize(size);
+                  }}
                 >
                   <ThemedText
                     style={[
@@ -118,20 +122,20 @@ export default function ProductDetailsScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <TouchableOpacity
-          style={[styles.cartButton, addedToCart && styles.addedButton]}
-          onPress={handleAddToCart}
-          disabled={addedToCart}
-        >
-          <IconSymbol
-            name={addedToCart ? "checkmark.circle.fill" : "cart.fill"}
-            size={20}
-            color="#FFF"
-          />
-          <ThemedText style={styles.cartButtonText}>
-            {addedToCart ? "Added to Cart" : "Add to Cart"}
-          </ThemedText>
-        </TouchableOpacity>
+        {addedToCart ? (
+          <TouchableOpacity
+            style={[styles.cartButton, styles.addedButton]}
+            onPress={() => router.push("/cart")}
+          >
+            <IconSymbol name="cart.fill" size={20} color="#FFF" />
+            <ThemedText style={styles.cartButtonText}>Go to Cart</ThemedText>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity style={styles.cartButton} onPress={handleAddToCart}>
+            <IconSymbol name="cart.fill" size={20} color="#FFF" />
+            <ThemedText style={styles.cartButtonText}>Add to Cart</ThemedText>
+          </TouchableOpacity>
+        )}
       </View>
     </ThemedView>
   );

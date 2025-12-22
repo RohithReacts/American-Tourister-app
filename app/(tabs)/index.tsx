@@ -5,11 +5,14 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { PRODUCTS } from "@/constants/products";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Image } from "expo-image";
+import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Dimensions,
+  Linking,
   Modal,
   ScrollView,
   StyleSheet,
@@ -45,7 +48,13 @@ interface Order {
   date: string;
   time: string;
   color: string;
+  pickupLocation: string;
 }
+
+const STORE_LOCATION =
+  "Vaishnavi Sales, 6-7-66, Raganna Darwaza, Main Road, Hyderabad - Warangal Hwy, Brahmanawada, Hanamkonda, Telangana 506011";
+
+const STORE_PHONE = "8374200125";
 
 const CATEGORY_DATA = [
   { name: "Hard Luggage", icon: "suitcase.fill", color: "#FF3B30" },
@@ -116,6 +125,82 @@ export default function HomeScreen() {
   const [newOrderTime, setNewOrderTime] = useState(getCurrentTime());
   const [pendingOrders, setPendingOrders] = useState<Order[]>([]);
 
+  // Location State
+  const [location, setLocation] = useState<Location.LocationObject | null>(
+    null
+  );
+  const [locationAddress, setLocationAddress] = useState<string>("");
+  const [locationLoading, setLocationLoading] = useState(true);
+  const [locationError, setLocationError] = useState<string>("");
+  const [isAddressExpanded, setIsAddressExpanded] = useState(false);
+
+  // Location Functions
+  const requestLocationPermission = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        setLocationError("Location permission denied");
+        setLocationLoading(false);
+        return false;
+      }
+      return true;
+    } catch (error) {
+      setLocationError("Error requesting permission");
+      setLocationLoading(false);
+      return false;
+    }
+  };
+
+  const getCurrentLocation = async () => {
+    setLocationLoading(true);
+    setLocationError("");
+
+    try {
+      const hasPermission = await requestLocationPermission();
+      if (!hasPermission) return;
+
+      const currentLocation = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      setLocation(currentLocation);
+
+      // Reverse geocode to get address
+      const [address] = await Location.reverseGeocodeAsync({
+        latitude: currentLocation.coords.latitude,
+        longitude: currentLocation.coords.longitude,
+      });
+
+      if (address) {
+        const formattedAddress = [address.city, address.region, address.country]
+          .filter(Boolean)
+          .join(", ");
+        setLocationAddress(formattedAddress || "Location found");
+      } else {
+        setLocationAddress("Location found");
+      }
+      setLocationLoading(false);
+    } catch (error) {
+      console.error("Failed to get location", error);
+      setLocationError("Unable to fetch location");
+      setLocationLoading(false);
+    }
+  };
+
+  // Store Contact Functions
+  const handlePhoneCall = async () => {
+    const phoneUrl = `tel:${STORE_PHONE}`;
+    const canOpen = await Linking.canOpenURL(phoneUrl);
+    if (canOpen) {
+      await Linking.openURL(phoneUrl);
+    } else {
+      Alert.alert("Error", "Unable to make phone call");
+    }
+  };
+
+  const toggleAddressExpansion = () => {
+    setIsAddressExpanded(!isAddressExpanded);
+  };
+
   // Load data from AsyncStorage on mount
   useEffect(() => {
     const loadData = async () => {
@@ -131,6 +216,11 @@ export default function HomeScreen() {
       }
     };
     loadData();
+  }, []);
+
+  // Get location on mount
+  useEffect(() => {
+    getCurrentLocation();
   }, []);
 
   // Persistence Helpers
@@ -240,6 +330,7 @@ export default function HomeScreen() {
       date: newOrderDate,
       time: newOrderTime,
       color: categoryInfo.color,
+      pickupLocation: STORE_LOCATION,
     };
 
     setPendingOrders([...pendingOrders, newOrder]);
@@ -309,17 +400,67 @@ export default function HomeScreen() {
           </View>
 
           <View style={styles.searchContainer}>
-            <IconSymbol
-              name="magnifyingglass"
-              size={20}
-              color="rgba(255,255,255,0.5)"
-            />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search your next adventure..."
-              placeholderTextColor="rgba(255,255,255,0.5)"
-              editable={false} // Just for UI in dashboard
-            />
+            <IconSymbol name="location.fill" size={24} color="#007AFF" />
+            <View style={styles.locationTextContainer}>
+              {locationLoading ? (
+                <View style={styles.locationLoadingRow}>
+                  <ActivityIndicator
+                    size="small"
+                    color="rgba(255,255,255,0.7)"
+                  />
+                  <ThemedText style={styles.locationText}>
+                    Getting location...
+                  </ThemedText>
+                </View>
+              ) : locationError ? (
+                <ThemedText style={[styles.locationText, styles.locationError]}>
+                  {locationError}
+                </ThemedText>
+              ) : (
+                <ThemedText style={styles.locationText} numberOfLines={1}>
+                  {locationAddress || "Store Location"}
+                </ThemedText>
+              )}
+            </View>
+            <TouchableOpacity
+              onPress={getCurrentLocation}
+              style={styles.refreshButton}
+            >
+              <IconSymbol
+                name="arrow.clockwise"
+                size={18}
+                color="rgba(255,255,255,0.7)"
+              />
+            </TouchableOpacity>
+          </View>
+
+          {/* Store Location */}
+          <View style={styles.storeLocationContainer}>
+            <View style={styles.storeLocationHeader}>
+              <IconSymbol name="suitcase.fill" size={22} color="#34C759" />
+              <ThemedText style={styles.storeLocationLabel}>
+                PICKUP STORE
+              </ThemedText>
+            </View>
+
+            <View style={styles.addressSection}>
+              <IconSymbol name="location.fill" size={18} color="#34C759" />
+              <ThemedText style={styles.storeLocationText}>
+                {STORE_LOCATION}
+              </ThemedText>
+            </View>
+
+            <TouchableOpacity
+              style={styles.phoneSection}
+              onPress={handlePhoneCall}
+              activeOpacity={0.7}
+            >
+              <IconSymbol name="phone.fill" size={18} color="#34C759" />
+              <ThemedText style={styles.storePhoneText}>
+                {STORE_PHONE}
+              </ThemedText>
+              <ThemedText style={styles.tapToCallText}>Tap to call</ThemedText>
+            </TouchableOpacity>
           </View>
 
           <View style={styles.quickActions}>
@@ -355,10 +496,10 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Today's Sales Section */}
+        {/* Sales Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <ThemedText type="subtitle">Today's Sales</ThemedText>
+            <ThemedText type="subtitle">Sales</ThemedText>
             <View style={styles.headerActions}>
               <TouchableOpacity
                 onPress={() => setIsModalVisible(true)}
@@ -408,16 +549,16 @@ export default function HomeScreen() {
           ) : (
             <View style={styles.emptySales}>
               <ThemedText style={styles.emptySalesText}>
-                No sales recorded today.
+                No sales recorded.
               </ThemedText>
             </View>
           )}
         </View>
 
-        {/* Today's Orders Section */}
+        {/* Orders Section */}
         <View style={[styles.section, { paddingTop: 0 }]}>
           <View style={styles.sectionHeader}>
-            <ThemedText type="subtitle">Today's Orders</ThemedText>
+            <ThemedText type="subtitle">Orders</ThemedText>
             <View style={styles.headerActions}>
               <TouchableOpacity
                 onPress={() => setIsOrderModalVisible(true)}
@@ -457,6 +598,12 @@ export default function HomeScreen() {
                     <ThemedText style={styles.salesAmount}>
                       {order.count} Orders • {formatCurrency(order.amount)}
                     </ThemedText>
+                    <ThemedText
+                      style={styles.orderPickupLocation}
+                      numberOfLines={1}
+                    >
+                      📍 Pickup: Vaishnavi Sales
+                    </ThemedText>
                     <ThemedText style={styles.salesTimestamp}>
                       {formatDate(order.date)} • {formatTime(order.time)}
                     </ThemedText>
@@ -467,7 +614,7 @@ export default function HomeScreen() {
           ) : (
             <View style={styles.emptySales}>
               <ThemedText style={styles.emptySalesText}>
-                No orders recorded today.
+                No orders recorded.
               </ThemedText>
             </View>
           )}
@@ -1009,6 +1156,94 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     color: "#FFF",
     fontSize: 16,
+  },
+  locationTextContainer: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  locationLoadingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  locationText: {
+    color: "#FFF",
+    fontSize: 14,
+    opacity: 0.9,
+  },
+  locationError: {
+    opacity: 0.6,
+    fontStyle: "italic",
+  },
+  refreshButton: {
+    padding: 8,
+    marginLeft: 8,
+  },
+  storeLocationContainer: {
+    backgroundColor: "rgba(52, 199, 89, 0.08)",
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: "rgba(52, 199, 89, 0.2)",
+    gap: 16,
+  },
+  storeLocationHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 4,
+  },
+  storeLocationLabel: {
+    color: "#34C759",
+    fontSize: 12,
+    fontWeight: "800",
+    letterSpacing: 1,
+  },
+  addressSection: {
+    flexDirection: "row",
+    gap: 12,
+    alignItems: "flex-start",
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(52, 199, 89, 0.15)",
+  },
+  storeLocationText: {
+    color: "#FFF",
+    fontSize: 14,
+    opacity: 0.95,
+    lineHeight: 20,
+    flex: 1,
+  },
+  phoneSection: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(52, 199, 89, 0.15)",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 14,
+    gap: 12,
+  },
+  storePhoneText: {
+    color: "#34C759",
+    fontSize: 16,
+    fontWeight: "700",
+    flex: 1,
+  },
+  tapToCallText: {
+    color: "#34C759",
+    fontSize: 11,
+    fontWeight: "600",
+    opacity: 0.7,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  orderPickupLocation: {
+    fontSize: 11,
+    fontWeight: "600",
+    opacity: 0.7,
+    marginTop: 4,
+    color: "#34C759",
   },
   quickActions: {
     flexDirection: "row",

@@ -28,6 +28,10 @@ const MAPPING: IconMapping = {
   "plus.circle.fill": "add-circle",
   "trash.fill": "delete",
   "exclamationmark.triangle.fill": "warning",
+  "location.fill": "location-on",
+  "arrow.clockwise": "refresh",
+  plus: "add",
+  "phone.fill": "phone",
 };
 
 /**

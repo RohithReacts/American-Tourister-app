@@ -2,20 +2,68 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useCart } from "@/context/CartContext";
+import { generateInvoice } from "@/utils/invoiceGenerator";
+import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
-import React from "react";
+import React, { useState } from "react";
 import {
+  Alert,
   FlatList,
+  Modal,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
   View,
 } from "react-native";
 
+const STORE_INFO = {
+  name: "Vaishnavi Sales",
+  address: "6-7-66, Raganna Darwaza, Main Road, Hanamkonda, Telangana 506011",
+  phone: "8374200125",
+};
+
 export default function CartScreen() {
-  const { cartItems, removeFromCart, totalAmount } = useCart();
+  const { cartItems, removeFromCart, totalAmount, clearCart } = useCart();
   const router = useRouter();
+  const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
+  const [lastOrderId, setLastOrderId] = useState("");
+
+  const handleCheckout = async () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    const orderId = Math.random().toString(36).substring(7).toUpperCase();
+    setLastOrderId(orderId);
+    setIsSuccessModalVisible(true);
+  };
+
+  const handleDownloadInvoice = async () => {
+    try {
+      await generateInvoice({
+        orderId: lastOrderId,
+        date: new Date().toLocaleDateString("en-IN", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        }),
+        items: cartItems.map((item) => ({
+          name: item.name,
+          size: item.selectedSize,
+          price: item.price,
+          quantity: item.quantity,
+        })),
+        totalAmount: totalAmount,
+        storeInfo: STORE_INFO,
+      });
+    } catch (error) {
+      Alert.alert("Error", "Failed to generate invoice");
+    }
+  };
+
+  const handleCloseSuccess = () => {
+    setIsSuccessModalVisible(false);
+    clearCart();
+    router.push("/");
+  };
 
   const renderItem = ({ item }: { item: any }) => (
     <View style={styles.cartItem}>
@@ -36,7 +84,10 @@ export default function CartScreen() {
       </View>
       <TouchableOpacity
         style={styles.removeButton}
-        onPress={() => removeFromCart(item.id, item.selectedSize)}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          removeFromCart(item.id, item.selectedSize);
+        }}
       >
         <IconSymbol name="trash" size={20} color="#FF3B30" />
       </TouchableOpacity>
@@ -98,10 +149,72 @@ export default function CartScreen() {
             cartItems.length === 0 && { opacity: 0.5 },
           ]}
           disabled={cartItems.length === 0}
+          onPress={handleCheckout}
         >
           <ThemedText style={styles.checkoutText}>Checkout</ThemedText>
         </TouchableOpacity>
       </View>
+
+      <Modal
+        visible={isSuccessModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={handleCloseSuccess}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.successIconContainer}>
+              <IconSymbol
+                name="checkmark.circle.fill"
+                size={80}
+                color="#34C759"
+              />
+            </View>
+
+            <ThemedText type="title" style={styles.successTitle}>
+              Order Success!
+            </ThemedText>
+            <ThemedText style={styles.successSubtitle}>
+              Your order #${lastOrderId} has been placed successfully.
+            </ThemedText>
+
+            <View style={styles.pickupCard}>
+              <View style={styles.pickupHeader}>
+                <IconSymbol name="suitcase.fill" size={20} color="#34C759" />
+                <ThemedText style={styles.pickupLabel}>STORE PICKUP</ThemedText>
+              </View>
+              <ThemedText style={styles.storeName}>
+                {STORE_INFO.name}
+              </ThemedText>
+              <ThemedText style={styles.storeAddress}>
+                {STORE_INFO.address}
+              </ThemedText>
+              <ThemedText style={styles.storePhone}>
+                📞 {STORE_INFO.phone}
+              </ThemedText>
+            </View>
+
+            <TouchableOpacity
+              style={styles.downloadButton}
+              onPress={handleDownloadInvoice}
+            >
+              <IconSymbol name="paperplane.fill" size={20} color="#007AFF" />
+              <ThemedText style={styles.downloadText}>
+                Download Invoice
+              </ThemedText>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.continueButton}
+              onPress={handleCloseSuccess}
+            >
+              <ThemedText style={styles.continueText}>
+                Continue Shopping
+              </ThemedText>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </ThemedView>
   );
 }
@@ -232,6 +345,112 @@ const styles = StyleSheet.create({
   checkoutText: {
     color: "#FFF",
     fontSize: 18,
+    fontWeight: "bold",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.8)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+  modalContent: {
+    width: "100%",
+    backgroundColor: "#1A1A1A",
+    borderRadius: 32,
+    padding: 32,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+  },
+  successIconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: "rgba(52, 199, 89, 0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  successTitle: {
+    fontSize: 28,
+    fontWeight: "bold",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  successSubtitle: {
+    fontSize: 16,
+    opacity: 0.6,
+    textAlign: "center",
+    marginBottom: 32,
+    lineHeight: 24,
+  },
+  pickupCard: {
+    width: "100%",
+    backgroundColor: "rgba(52, 199, 89, 0.05)",
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 32,
+    borderWidth: 1,
+    borderColor: "rgba(52, 199, 89, 0.2)",
+  },
+  pickupHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 12,
+  },
+  pickupLabel: {
+    fontSize: 12,
+    fontWeight: "bold",
+    color: "#34C759",
+    letterSpacing: 1,
+  },
+  storeName: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 4,
+  },
+  storeAddress: {
+    fontSize: 14,
+    opacity: 0.7,
+    lineHeight: 20,
+    marginBottom: 8,
+  },
+  storePhone: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#34C759",
+  },
+  downloadButton: {
+    width: "100%",
+    height: 56,
+    backgroundColor: "rgba(0, 122, 255, 0.1)",
+    borderRadius: 16,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "rgba(0, 122, 255, 0.2)",
+  },
+  downloadText: {
+    color: "#007AFF",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  continueButton: {
+    width: "100%",
+    height: 56,
+    backgroundColor: "#007AFF",
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  continueText: {
+    color: "#FFF",
+    fontSize: 16,
     fontWeight: "bold",
   },
 });
