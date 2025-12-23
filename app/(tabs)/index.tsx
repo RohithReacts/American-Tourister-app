@@ -3,6 +3,7 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { PRODUCTS } from "@/constants/products";
+import { useAuth } from "@/context/AuthContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Image } from "expo-image";
 import * as Location from "expo-location";
@@ -77,6 +78,7 @@ const formatTime = (timeStr: string) => {
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { isAdmin } = useAuth();
   const featuredProducts = PRODUCTS.filter((p) => p.isFeatured);
 
   // Sales State
@@ -272,9 +274,9 @@ export default function HomeScreen() {
         <View style={styles.dashboardHeader}>
           <View style={styles.headerTop}>
             <View>
-              <ThemedText style={styles.welcomeText}>Welcome back,</ThemedText>
+              <ThemedText style={styles.welcomeText}>Welcome back</ThemedText>
               <ThemedText type="title" style={styles.userName}>
-                Traveler!
+                Traveler
               </ThemedText>
             </View>
             <View style={styles.logoContainer}>
@@ -384,63 +386,69 @@ export default function HomeScreen() {
         </View>
 
         {/* Sales Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <ThemedText type="subtitle">Sales</ThemedText>
-            <View style={styles.headerActions}>
-              <TouchableOpacity
-                onPress={() => setIsModalVisible(true)}
-                style={styles.iconButton}
-              >
-                <IconSymbol name="plus.circle.fill" size={20} color="#007AFF" />
-              </TouchableOpacity>
-              {sales.length > 0 && (
+        {isAdmin && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <ThemedText type="subtitle">Sales</ThemedText>
+              <View style={styles.headerActions}>
                 <TouchableOpacity
-                  onPress={() => setIsClearModalVisible(true)}
-                  style={[styles.iconButton, { marginLeft: 12 }]}
+                  onPress={() => setIsModalVisible(true)}
+                  style={styles.iconButton}
                 >
-                  <IconSymbol name="trash.fill" size={20} color="#FF3B30" />
+                  <IconSymbol
+                    name="plus.circle.fill"
+                    size={20}
+                    color="#007AFF"
+                  />
                 </TouchableOpacity>
-              )}
+                {sales.length > 0 && (
+                  <TouchableOpacity
+                    onPress={() => setIsClearModalVisible(true)}
+                    style={[styles.iconButton, { marginLeft: 12 }]}
+                  >
+                    <IconSymbol name="trash.fill" size={20} color="#FF3B30" />
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
+            {sales.length > 0 ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.salesScroll}
+              >
+                {sales.map((sale) => (
+                  <View key={sale.id} style={styles.salesCard}>
+                    <View style={styles.salesImageContainer}>
+                      <Image
+                        source={sale.productImage}
+                        style={styles.salesProductImage}
+                        contentFit="contain"
+                      />
+                    </View>
+                    <View style={styles.salesInfo}>
+                      <ThemedText style={styles.salesCategory}>
+                        {sale.productName} • {sale.size}
+                      </ThemedText>
+                      <ThemedText style={styles.salesAmount}>
+                        {formatCurrency(sale.amount)}
+                      </ThemedText>
+                      <ThemedText style={styles.salesTimestamp}>
+                        {formatDate(sale.date)} • {formatTime(sale.time)}
+                      </ThemedText>
+                    </View>
+                  </View>
+                ))}
+              </ScrollView>
+            ) : (
+              <View style={styles.emptySales}>
+                <ThemedText style={styles.emptySalesText}>
+                  No sales recorded.
+                </ThemedText>
+              </View>
+            )}
           </View>
-          {sales.length > 0 ? (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.salesScroll}
-            >
-              {sales.map((sale) => (
-                <View key={sale.id} style={styles.salesCard}>
-                  <View style={styles.salesImageContainer}>
-                    <Image
-                      source={sale.productImage}
-                      style={styles.salesProductImage}
-                      contentFit="contain"
-                    />
-                  </View>
-                  <View style={styles.salesInfo}>
-                    <ThemedText style={styles.salesCategory}>
-                      {sale.productName} • {sale.size}
-                    </ThemedText>
-                    <ThemedText style={styles.salesAmount}>
-                      {formatCurrency(sale.amount)}
-                    </ThemedText>
-                    <ThemedText style={styles.salesTimestamp}>
-                      {formatDate(sale.date)} • {formatTime(sale.time)}
-                    </ThemedText>
-                  </View>
-                </View>
-              ))}
-            </ScrollView>
-          ) : (
-            <View style={styles.emptySales}>
-              <ThemedText style={styles.emptySalesText}>
-                No sales recorded.
-              </ThemedText>
-            </View>
-          )}
-        </View>
+        )}
 
         {/* Featured Section */}
         {featuredProducts.length > 0 && (

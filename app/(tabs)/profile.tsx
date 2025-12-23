@@ -2,19 +2,21 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { PRODUCTS } from "@/constants/products";
+import { useAuth } from "@/context/AuthContext";
 import {
   downloadInvoice,
   getInvoiceHTMLForDisplay,
 } from "@/utils/invoiceGenerator";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Image } from "expo-image";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
   Modal,
   ScrollView,
   StyleSheet,
+  Switch,
   TextInput,
   TouchableOpacity,
   View,
@@ -75,6 +77,7 @@ const formatTime = (timeStr: string) => {
 };
 
 export default function ProfileScreen() {
+  const router = useRouter();
   const [showOrders, setShowOrders] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
   const [isOrderModalVisible, setIsOrderModalVisible] = useState(false);
@@ -83,6 +86,7 @@ export default function ProfileScreen() {
   const [selectedOrderForBill, setSelectedOrderForBill] =
     useState<Order | null>(null);
   const [isInvoiceModalVisible, setIsInvoiceModalVisible] = useState(false);
+  const { user, isAdmin, toggleAdmin, logout } = useAuth();
   const { tab } = useLocalSearchParams();
 
   // Handle deep linking to orders
@@ -105,7 +109,11 @@ export default function ProfileScreen() {
   const [pendingOrders, setPendingOrders] = useState<Order[]>([]);
 
   const menuItems = [
-    { icon: "person.fill", label: "My Account", action: () => {} },
+    {
+      icon: "person.fill",
+      label: "My Account",
+      action: () => router.push("/account-details"),
+    },
     {
       icon: "bag.fill",
       label: "My Orders",
@@ -116,6 +124,17 @@ export default function ProfileScreen() {
     { icon: "creditcard.fill", label: "Payment Methods", action: () => {} },
     { icon: "bell.fill", label: "Notifications", action: () => {} },
     { icon: "gearshape.fill", label: "Settings", action: () => {} },
+    ...(user?.email === "admin@americantourister.com"
+      ? [
+          {
+            icon: "lock.shield.fill",
+            label: "Admin Mode",
+            isToggle: true,
+            value: isAdmin,
+            action: toggleAdmin,
+          },
+        ]
+      : []),
   ];
 
   // Load orders from AsyncStorage on mount
@@ -696,29 +715,10 @@ export default function ProfileScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <ThemedView style={styles.header}>
-          <View style={styles.profileInfo}>
-            <View style={styles.avatarContainer}>
-              <Image
-                source={{
-                  uri: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=1000&auto=format&fit=crop",
-                }}
-                style={styles.avatar}
-              />
-              <TouchableOpacity style={styles.editBadge}>
-                <IconSymbol name="pencil" size={12} color="#FFF" />
-              </TouchableOpacity>
-            </View>
-            <ThemedText type="subtitle" style={styles.userName}>
-              John Doe
-            </ThemedText>
-            <ThemedText style={styles.userEmail}>
-              john.doe@example.com
-            </ThemedText>
-          </View>
-        </ThemedView>
-
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingTop: 20 }}
+      >
         <View style={styles.menuSection}>
           {menuItems.map((item, index) => (
             <TouchableOpacity
@@ -731,21 +731,30 @@ export default function ProfileScreen() {
                   <IconSymbol
                     name={item.icon as any}
                     size={20}
-                    color="#007AFF"
+                    color={item.isToggle && item.value ? "#34C759" : "#007AFF"}
                   />
                 </View>
                 <ThemedText style={styles.menuLabel}>{item.label}</ThemedText>
               </View>
-              <IconSymbol
-                name="chevron.right"
-                size={16}
-                color="rgba(255,255,255,0.3)"
-              />
+              {item.isToggle ? (
+                <Switch
+                  value={item.value}
+                  onValueChange={item.action}
+                  trackColor={{ false: "#3e3e3e", true: "#34C759" }}
+                  thumbColor={item.value ? "#FFF" : "#f4f3f4"}
+                />
+              ) : (
+                <IconSymbol
+                  name="chevron.right"
+                  size={16}
+                  color="rgba(255,255,255,0.3)"
+                />
+              )}
             </TouchableOpacity>
           ))}
         </View>
 
-        <TouchableOpacity style={styles.logoutButton}>
+        <TouchableOpacity style={styles.logoutButton} onPress={logout}>
           <ThemedText style={styles.logoutText}>Log Out</ThemedText>
         </TouchableOpacity>
 
