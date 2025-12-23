@@ -2,8 +2,13 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { PRODUCTS } from "@/constants/products";
+import {
+  downloadInvoice,
+  getInvoiceHTMLForDisplay,
+} from "@/utils/invoiceGenerator";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Image } from "expo-image";
+import { useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
@@ -14,6 +19,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { WebView } from "react-native-webview";
 
 interface Order {
   id: string;
@@ -23,6 +29,7 @@ interface Order {
   category: string;
   count: number;
   amount: number;
+  mrp: number;
   size: string;
   date: string;
   time: string;
@@ -73,6 +80,17 @@ export default function ProfileScreen() {
   const [isOrderModalVisible, setIsOrderModalVisible] = useState(false);
   const [isClearOrdersModalVisible, setIsClearOrdersModalVisible] =
     useState(false);
+  const [selectedOrderForBill, setSelectedOrderForBill] =
+    useState<Order | null>(null);
+  const [isInvoiceModalVisible, setIsInvoiceModalVisible] = useState(false);
+  const { tab } = useLocalSearchParams();
+
+  // Handle deep linking to orders
+  useEffect(() => {
+    if (tab === "orders") {
+      setShowOrders(true);
+    }
+  }, [tab]);
 
   // New Order State
   const [selectedOrderProductId, setSelectedOrderProductId] = useState(
@@ -145,6 +163,7 @@ export default function ProfileScreen() {
       category: product.category,
       count,
       amount: totalAmount,
+      mrp: (product.sizeMrps?.[selectedOrderSize] || product.mrp) * count,
       size: selectedOrderSize,
       date: newOrderDate,
       time: newOrderTime,
@@ -190,6 +209,55 @@ export default function ProfileScreen() {
       currency: "INR",
       maximumFractionDigits: 0,
     }).format(value);
+  };
+
+  const handleOrderClick = (order: Order) => {
+    setSelectedOrderForBill(order);
+    setIsInvoiceModalVisible(true);
+  };
+
+  const handleDownloadOrderInvoice = async () => {
+    if (!selectedOrderForBill) return;
+
+    try {
+      await downloadInvoice({
+        orderId: selectedOrderForBill.id,
+        date: new Date(selectedOrderForBill.date).toLocaleDateString("en-IN", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        }),
+        items: [
+          {
+            name: selectedOrderForBill.productName,
+            size: selectedOrderForBill.size,
+            price: selectedOrderForBill.amount / selectedOrderForBill.count,
+            mrp: (() => {
+              if (selectedOrderForBill.mrp)
+                return selectedOrderForBill.mrp / selectedOrderForBill.count;
+              const product = PRODUCTS.find(
+                (p) => p.id === selectedOrderForBill.productId
+              );
+              if (product) {
+                return (
+                  product.sizeMrps?.[selectedOrderForBill.size] || product.mrp
+                );
+              }
+              return selectedOrderForBill.amount / selectedOrderForBill.count;
+            })(),
+            quantity: selectedOrderForBill.count,
+          },
+        ],
+        totalAmount: selectedOrderForBill.amount,
+        storeInfo: {
+          name: "Vaishnavi Sales",
+          address: selectedOrderForBill.pickupLocation,
+          phone: "8374200125",
+        },
+      });
+    } catch (error) {
+      console.error("Failed to download invoice:", error);
+    }
   };
 
   const selectedOrderProduct = PRODUCTS.find(
@@ -240,7 +308,11 @@ export default function ProfileScreen() {
             {orders.length > 0 ? (
               <View style={styles.ordersListContainer}>
                 {orders.map((order) => (
-                  <View key={order.id} style={styles.orderCard}>
+                  <TouchableOpacity
+                    key={order.id}
+                    style={styles.orderCard}
+                    onPress={() => handleOrderClick(order)}
+                  >
                     <View style={styles.orderImageContainer}>
                       <Image
                         source={order.productImage}
@@ -265,7 +337,7 @@ export default function ProfileScreen() {
                         {formatDate(order.date)} • {formatTime(order.time)}
                       </ThemedText>
                     </View>
-                  </View>
+                  </TouchableOpacity>
                 ))}
               </View>
             ) : (
@@ -519,6 +591,102 @@ export default function ProfileScreen() {
                   <ThemedText style={styles.buttonText}>Clear All</ThemedText>
                 </TouchableOpacity>
               </View>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Invoice View Modal */}
+        <Modal
+          visible={isInvoiceModalVisible}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setIsInvoiceModalVisible(false)}
+        >
+          <View style={styles.invoiceModalOverlay}>
+            <View style={styles.invoiceModalContent}>
+              <View style={styles.invoiceModalHeader}>
+                <ThemedText type="subtitle" style={styles.invoiceModalTitle}>
+                  Invoice #{selectedOrderForBill?.id}
+                </ThemedText>
+                <TouchableOpacity
+                  onPress={() => setIsInvoiceModalVisible(false)}
+                  style={styles.closeButton}
+                >
+                  <IconSymbol name="xmark.circle.fill" size={28} color="#666" />
+                </TouchableOpacity>
+              </View>
+
+              {selectedOrderForBill && (
+                <>
+                  <WebView
+                    originWhitelist={["*"]}
+                    source={{
+                      html: getInvoiceHTMLForDisplay({
+                        orderId: selectedOrderForBill.id,
+                        date: new Date(
+                          selectedOrderForBill.date
+                        ).toLocaleDateString("en-IN", {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                        }),
+                        items: [
+                          {
+                            name: selectedOrderForBill.productName,
+                            size: selectedOrderForBill.size,
+                            price:
+                              selectedOrderForBill.amount /
+                              selectedOrderForBill.count,
+                            mrp: (() => {
+                              if (selectedOrderForBill.mrp)
+                                return (
+                                  selectedOrderForBill.mrp /
+                                  selectedOrderForBill.count
+                                );
+                              const product = PRODUCTS.find(
+                                (p) => p.id === selectedOrderForBill.productId
+                              );
+                              if (product) {
+                                return (
+                                  product.sizeMrps?.[
+                                    selectedOrderForBill.size
+                                  ] || product.mrp
+                                );
+                              }
+                              return (
+                                selectedOrderForBill.amount /
+                                selectedOrderForBill.count
+                              );
+                            })(),
+                            quantity: selectedOrderForBill.count,
+                          },
+                        ],
+                        totalAmount: selectedOrderForBill.amount,
+                        storeInfo: {
+                          name: "Vaishnavi Sales",
+                          address: selectedOrderForBill.pickupLocation,
+                          phone: "8374200125",
+                        },
+                      }),
+                    }}
+                    style={styles.webView}
+                  />
+
+                  <TouchableOpacity
+                    style={styles.downloadInvoiceButton}
+                    onPress={handleDownloadOrderInvoice}
+                  >
+                    <IconSymbol
+                      name="arrow.down.circle.fill"
+                      size={20}
+                      color="#FFF"
+                    />
+                    <ThemedText style={styles.downloadInvoiceText}>
+                      Download PDF
+                    </ThemedText>
+                  </TouchableOpacity>
+                </>
+              )}
             </View>
           </View>
         </Modal>
@@ -983,5 +1151,55 @@ const styles = StyleSheet.create({
   },
   confirmButton: {
     backgroundColor: "#FF3B30",
+  },
+  // Invoice Modal Styles
+  invoiceModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.9)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  invoiceModalContent: {
+    width: "95%",
+    height: "90%",
+    backgroundColor: "#1A1A1A",
+    borderRadius: 24,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+  },
+  invoiceModalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.1)",
+  },
+  invoiceModalTitle: {
+    fontSize: 18,
+  },
+  closeButton: {
+    padding: 4,
+  },
+  webView: {
+    flex: 1,
+    backgroundColor: "#FFF",
+  },
+  downloadInvoiceButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#007AFF",
+    margin: 20,
+    marginTop: 12,
+    height: 56,
+    borderRadius: 16,
+    gap: 12,
+  },
+  downloadInvoiceText: {
+    color: "#FFF",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });

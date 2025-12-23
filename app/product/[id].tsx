@@ -50,34 +50,73 @@ export default function ProductDetailsScreen() {
             style={styles.image}
             contentFit="cover"
           />
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
+            <IconSymbol name="chevron.left" size={24} color="#FFF" />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.detailsContainer}>
-          <View style={styles.headerRow}>
-            <View>
-              <ThemedText style={styles.category}>
-                {product.category}
-              </ThemedText>
+          <View style={styles.headerSection}>
+            <ThemedText style={styles.category}>{product.category}</ThemedText>
+            <View style={styles.titleRow}>
               <ThemedText type="title" style={styles.name}>
                 {product.name}
               </ThemedText>
-            </View>
-            <View style={styles.priceBadge}>
-              <ThemedText style={styles.priceText}>
-                ₹
-                {(
-                  product.sizePrices?.[selectedSize] ?? product.price
-                ).toLocaleString("en-IN")}
-              </ThemedText>
+              <View style={styles.priceContainer}>
+                <ThemedText style={styles.priceText}>
+                  ₹
+                  {(
+                    product.sizePrices?.[selectedSize] ?? product.price
+                  ).toLocaleString("en-IN")}
+                </ThemedText>
+                <View style={styles.mrpRow}>
+                  <ThemedText style={styles.mrpText}>
+                    ₹
+                    {(
+                      product.sizeMrps?.[selectedSize] ?? product.mrp
+                    ).toLocaleString("en-IN")}
+                  </ThemedText>
+                  <ThemedText style={styles.discountText}>
+                    {Math.round(
+                      (((product.sizeMrps?.[selectedSize] ?? product.mrp) -
+                        (product.sizePrices?.[selectedSize] ?? product.price)) /
+                        (product.sizeMrps?.[selectedSize] ?? product.mrp)) *
+                        100
+                    )}
+                    % OFF
+                  </ThemedText>
+                </View>
+              </View>
             </View>
           </View>
 
           <View style={styles.ratingRow}>
-            <IconSymbol name="star.fill" size={16} color="#FFD700" />
-            <ThemedText style={styles.ratingText}>{product.rating}</ThemedText>
+            <View style={styles.ratingBadge}>
+              <IconSymbol name="star.fill" size={14} color="#FFD700" />
+              <ThemedText style={styles.ratingText}>
+                {product.rating}
+              </ThemedText>
+            </View>
             <ThemedText style={styles.reviewsText}>
-              ({product.reviews} reviews)
+              {product.reviews} Verified Reviews
             </ThemedText>
+          </View>
+
+          <View style={styles.trustBadges}>
+            <View style={styles.badgeItem}>
+              <IconSymbol name="globe" size={18} color="#34C759" />
+              <ThemedText style={styles.badgeLabel}>
+                3 Years Global Warranty
+              </ThemedText>
+            </View>
+            <View style={styles.badgeDivider} />
+            <View style={styles.badgeItem}>
+              <IconSymbol name="seal.fill" size={18} color="#34C759" />
+              <ThemedText style={styles.badgeLabel}>Genuine Product</ThemedText>
+            </View>
           </View>
 
           <View style={styles.section}>
@@ -155,54 +194,120 @@ const styles = StyleSheet.create({
     height: "100%",
   },
   detailsContainer: {
-    padding: 24,
+    padding: 20,
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
     marginTop: -32,
-    backgroundColor: "#000", // Assuming dark theme for premium feel
+    backgroundColor: "#000",
   },
-  headerRow: {
+  backButton: {
+    position: "absolute",
+    top: 50,
+    left: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  headerSection: {
+    marginBottom: 20,
+  },
+  titleRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 12,
+    gap: 16,
   },
   category: {
-    fontSize: 14,
-    opacity: 0.6,
+    fontSize: 12,
+    opacity: 0.5,
     textTransform: "uppercase",
-    letterSpacing: 1,
-    marginBottom: 4,
+    letterSpacing: 1.5,
+    marginBottom: 6,
+    fontWeight: "600",
   },
   name: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "bold",
+    flex: 1,
+    lineHeight: 28,
   },
-  priceBadge: {
-    backgroundColor: "rgba(0, 122, 255, 0.1)",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 12,
+  priceContainer: {
+    alignItems: "flex-end",
   },
   priceText: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: "bold",
     color: "#007AFF",
+  },
+  mrpRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 2,
+  },
+  mrpText: {
+    fontSize: 13,
+    opacity: 0.4,
+    textDecorationLine: "line-through",
+  },
+  discountText: {
+    color: "#34C759",
+    fontSize: 13,
+    fontWeight: "700",
   },
   ratingRow: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 24,
+    gap: 12,
+  },
+  ratingBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255, 215, 0, 0.1)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    gap: 4,
   },
   ratingText: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginLeft: 6,
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#FFD700",
   },
   reviewsText: {
     fontSize: 14,
     opacity: 0.5,
-    marginLeft: 4,
+  },
+  trustBadges: {
+    flexDirection: "row",
+    backgroundColor: "rgba(255,255,255,0.03)",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 32,
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.05)",
+  },
+  badgeItem: {
+    alignItems: "center",
+    gap: 6,
+    flex: 1,
+  },
+  badgeLabel: {
+    fontSize: 10,
+    fontWeight: "600",
+    opacity: 0.8,
+    textAlign: "center",
+  },
+  badgeDivider: {
+    width: 1,
+    height: 20,
+    backgroundColor: "rgba(255,255,255,0.1)",
   },
   section: {
     marginBottom: 24,

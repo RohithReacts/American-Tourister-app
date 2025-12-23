@@ -21,6 +21,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const addToCart = (product: Product, size: string) => {
     const price = product.sizePrices?.[size] ?? product.price;
+    const mrp = product.sizeMrps?.[size] ?? product.mrp;
     setCartItems((prevItems) => {
       const existingItem = prevItems.find(
         (item) => item.id === product.id && item.selectedSize === size
@@ -34,7 +35,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
       return [
         ...prevItems,
-        { ...product, price, selectedSize: size, quantity: 1 },
+        { ...product, price, mrp, selectedSize: size, quantity: 1 },
       ];
     });
   };

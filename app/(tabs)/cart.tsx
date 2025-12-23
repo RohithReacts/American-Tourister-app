@@ -2,14 +2,12 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useCart } from "@/context/CartContext";
-import { generateInvoice } from "@/utils/invoiceGenerator";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  Alert,
   FlatList,
   Modal,
   ScrollView,
@@ -50,6 +48,11 @@ export default function CartScreen() {
       // Get first product for representative data (or could combine all products)
       const firstItem = cartItems[0];
 
+      const totalMrp = cartItems.reduce(
+        (sum, item) => sum + item.mrp * item.quantity,
+        0
+      );
+
       const newOrder = {
         id: orderId,
         productId: firstItem.id,
@@ -59,6 +62,7 @@ export default function CartScreen() {
         category: firstItem.category || "Luggage",
         count: totalQuantity,
         amount: totalAmount,
+        mrp: totalMrp,
         size: cartItems.length > 1 ? "Multiple" : firstItem.selectedSize,
         date: dateStr,
         time: timeStr,
@@ -82,27 +86,10 @@ export default function CartScreen() {
     setIsSuccessModalVisible(true);
   };
 
-  const handleDownloadInvoice = async () => {
-    try {
-      await generateInvoice({
-        orderId: lastOrderId,
-        date: new Date().toLocaleDateString("en-IN", {
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-        }),
-        items: cartItems.map((item) => ({
-          name: item.name,
-          size: item.selectedSize,
-          price: item.price,
-          quantity: item.quantity,
-        })),
-        totalAmount: totalAmount,
-        storeInfo: STORE_INFO,
-      });
-    } catch (error) {
-      Alert.alert("Error", "Failed to generate invoice");
-    }
+  const handleGoToOrders = () => {
+    setIsSuccessModalVisible(false);
+    clearCart();
+    router.push("/profile?tab=orders");
   };
 
   const handleCloseSuccess = () => {
@@ -241,12 +228,12 @@ export default function CartScreen() {
             </View>
 
             <TouchableOpacity
-              style={styles.downloadButton}
-              onPress={handleDownloadInvoice}
+              style={styles.ordersButton}
+              onPress={handleGoToOrders}
             >
-              <IconSymbol name="paperplane.fill" size={20} color="#007AFF" />
-              <ThemedText style={styles.downloadText}>
-                Download Invoice
+              <IconSymbol name="suitcase.fill" size={20} color="#007AFF" />
+              <ThemedText style={styles.ordersButtonText}>
+                Go to My Orders
               </ThemedText>
             </TouchableOpacity>
 
@@ -468,7 +455,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#34C759",
   },
-  downloadButton: {
+  ordersButton: {
     width: "100%",
     height: 56,
     backgroundColor: "rgba(0, 122, 255, 0.1)",
@@ -481,7 +468,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(0, 122, 255, 0.2)",
   },
-  downloadText: {
+  ordersButtonText: {
     color: "#007AFF",
     fontSize: 16,
     fontWeight: "bold",

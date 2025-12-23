@@ -32,6 +32,14 @@ const MAPPING: IconMapping = {
   "arrow.clockwise": "refresh",
   plus: "add",
   "phone.fill": "phone",
+  globe: "public",
+  "seal.fill": "verified",
+  "checkmark.shield.fill": "verified-user",
+  "star.fill": "star",
+  "truck.fill": "local-shipping",
+  "arrow.counterclockwise": "settings-backup-restore",
+  "shield.fill": "security",
+  "chevron.left": "chevron-left",
 };
 
 /**

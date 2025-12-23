@@ -68,9 +68,22 @@ export function ProductCard({ product }: ProductCardProps) {
             </ThemedText>
           </View>
           <View style={styles.footer}>
-            <ThemedText type="subtitle" style={styles.price}>
-              ₹{product.price.toLocaleString("en-IN")}
-            </ThemedText>
+            <View>
+              <ThemedText type="subtitle" style={styles.price}>
+                ₹{product.price.toLocaleString("en-IN")}
+              </ThemedText>
+              <ThemedText style={styles.mrp}>
+                ₹{product.mrp.toLocaleString("en-IN")}
+              </ThemedText>
+            </View>
+            <View style={styles.discountBadge}>
+              <ThemedText style={styles.discountText}>
+                {Math.round(
+                  ((product.mrp - product.price) / product.mrp) * 100
+                )}
+                % OFF
+              </ThemedText>
+            </View>
           </View>
         </View>
       </ThemedView>
@@ -163,6 +176,24 @@ const styles = StyleSheet.create({
   },
   price: {
     fontSize: 16,
+    fontWeight: "bold",
+    color: "#FFF",
+  },
+  mrp: {
+    fontSize: 12,
+    opacity: 0.5,
+    textDecorationLine: "line-through",
+    marginTop: 2,
+  },
+  discountBadge: {
+    backgroundColor: "rgba(52, 199, 89, 0.15)",
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  discountText: {
+    color: "#34C759",
+    fontSize: 10,
     fontWeight: "bold",
   },
 });
