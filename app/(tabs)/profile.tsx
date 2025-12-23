@@ -119,11 +119,11 @@ export default function ProfileScreen() {
       label: "My Orders",
       action: () => setShowOrders(true),
     },
-    { icon: "heart.fill", label: "Wishlist", action: () => {} },
-    { icon: "mappin.and.ellipse", label: "Shipping Address", action: () => {} },
-    { icon: "creditcard.fill", label: "Payment Methods", action: () => {} },
-    { icon: "bell.fill", label: "Notifications", action: () => {} },
-    { icon: "gearshape.fill", label: "Settings", action: () => {} },
+    {
+      icon: "heart.fill",
+      label: "Wishlist",
+      action: () => router.push("/wishlist"),
+    },
     ...(user?.email === "admin@americantourister.com"
       ? [
           {

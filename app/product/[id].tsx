@@ -3,6 +3,7 @@ import { ThemedView } from "@/components/themed-view";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { PRODUCTS } from "@/constants/products";
 import { useCart } from "@/context/CartContext";
+import { useWishlist } from "@/context/WishlistContext";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
@@ -21,6 +22,7 @@ export default function ProductDetailsScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { addToCart } = useCart();
+  const { toggleWishlist, isInWishlist } = useWishlist();
   const product = PRODUCTS.find((p) => p.id === id);
 
   const [selectedSize, setSelectedSize] = useState(product?.sizes[0] || "");
@@ -33,6 +35,13 @@ export default function ProductDetailsScreen() {
       </ThemedView>
     );
   }
+
+  const isWishlisted = isInWishlist(product.id);
+
+  const handleToggleWishlist = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    toggleWishlist(product);
+  };
 
   const handleAddToCart = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -51,10 +60,15 @@ export default function ProductDetailsScreen() {
             contentFit="cover"
           />
           <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}
+            style={styles.wishlistButton}
+            onPress={handleToggleWishlist}
           >
-            <IconSymbol name="chevron.left" size={24} color="#FFF" />
+            <IconSymbol
+              name={isWishlisted ? "heart.fill" : "heart"}
+              size={28}
+              color={isWishlisted ? "#FF3B30" : "#FFF"}
+              style={styles.wishlistIcon}
+            />
           </TouchableOpacity>
         </View>
 
@@ -200,16 +214,21 @@ const styles = StyleSheet.create({
     marginTop: -32,
     backgroundColor: "#000",
   },
-  backButton: {
+  wishlistButton: {
     position: "absolute",
     top: 50,
-    left: 20,
+    right: 20,
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "center",
     alignItems: "center",
+    zIndex: 10,
+  },
+  wishlistIcon: {
+    textShadowColor: "rgba(0, 0, 0, 0.5)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
   },
   headerSection: {
     marginBottom: 20,

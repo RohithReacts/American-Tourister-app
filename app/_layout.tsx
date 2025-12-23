@@ -9,6 +9,7 @@ import "react-native-reanimated";
 
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
+import { WishlistProvider } from "@/context/WishlistContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useEffect } from "react";
 
@@ -52,6 +53,7 @@ function RootLayoutNav() {
           options={{ presentation: "modal", title: "Modal" }}
         />
         <Stack.Screen name="account-details" options={{ headerShown: false }} />
+        <Stack.Screen name="wishlist" options={{ headerShown: false }} />
         <Stack.Screen
           name="product/[id]"
           options={{ title: "Product Details", headerBackTitle: "Back" }}
@@ -66,7 +68,9 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <CartProvider>
-        <RootLayoutNav />
+        <WishlistProvider>
+          <RootLayoutNav />
+        </WishlistProvider>
       </CartProvider>
     </AuthProvider>
   );

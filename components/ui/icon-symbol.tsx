@@ -40,6 +40,21 @@ const MAPPING: IconMapping = {
   "arrow.counterclockwise": "settings-backup-restore",
   "shield.fill": "security",
   "chevron.left": "chevron-left",
+  "envelope.fill": "email",
+  "lock.fill": "lock",
+  "camera.fill": "photo-camera",
+  "person.text.rectangle.fill": "badge",
+  "calendar.badge.clock": "event",
+  number: "tag",
+  calendar: "event",
+  pencil: "edit",
+  "lock.shield.fill": "admin-panel-settings",
+  "heart.fill": "favorite",
+  heart: "favorite-border",
+  "mappin.and.ellipse": "location-on",
+  "creditcard.fill": "credit-card",
+  "bell.fill": "notifications",
+  "gearshape.fill": "settings",
 };
 
 /**

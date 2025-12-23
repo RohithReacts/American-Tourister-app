@@ -75,7 +75,7 @@ export default function AccountDetailsScreen() {
     {
       label: "Account ID",
       value: user?.id || "N/A",
-      icon: "number",
+      icon: "person.text.rectangle.fill",
       readonly: true,
     },
     {
@@ -87,7 +87,7 @@ export default function AccountDetailsScreen() {
         month: "long",
         year: "numeric",
       }),
-      icon: "calendar",
+      icon: "calendar.badge.clock",
       readonly: true,
     },
   ];
