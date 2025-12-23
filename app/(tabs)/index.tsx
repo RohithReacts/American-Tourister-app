@@ -36,21 +36,6 @@ interface Sale {
   color: string;
 }
 
-interface Order {
-  id: string;
-  productId: string;
-  productName: string;
-  productImage: any;
-  category: string;
-  count: number;
-  amount: number;
-  size: string;
-  date: string;
-  time: string;
-  color: string;
-  pickupLocation: string;
-}
-
 const STORE_LOCATION =
   "Vaishnavi Sales, 6-7-66, Raganna Darwaza, Main Road, Hyderabad - Warangal Hwy, Brahmanawada, Hanamkonda, Telangana 506011";
 
@@ -63,7 +48,6 @@ const CATEGORY_DATA = [
 ];
 
 const SALES_STORAGE_KEY = "@sales_data";
-const ORDERS_STORAGE_KEY = "@orders_data";
 
 const getCurrentDate = () => {
   const now = new Date();
@@ -106,24 +90,6 @@ export default function HomeScreen() {
   const [newSaleDate, setNewSaleDate] = useState(getCurrentDate());
   const [newSaleTime, setNewSaleTime] = useState(getCurrentTime());
   const [pendingSales, setPendingSales] = useState<Sale[]>([]);
-
-  // Orders State
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [isOrderModalVisible, setIsOrderModalVisible] = useState(false);
-  const [isClearOrdersModalVisible, setIsClearOrdersModalVisible] =
-    useState(false);
-
-  // New Order State
-  const [selectedOrderProductId, setSelectedOrderProductId] = useState(
-    PRODUCTS[0].id
-  );
-  const [selectedOrderSize, setSelectedOrderSize] = useState(
-    PRODUCTS[0].sizes[0]
-  );
-  const [newOrderCount, setNewOrderCount] = useState("");
-  const [newOrderDate, setNewOrderDate] = useState(getCurrentDate());
-  const [newOrderTime, setNewOrderTime] = useState(getCurrentTime());
-  const [pendingOrders, setPendingOrders] = useState<Order[]>([]);
 
   // Location State
   const [location, setLocation] = useState<Location.LocationObject | null>(
@@ -205,12 +171,8 @@ export default function HomeScreen() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [storedSales, storedOrders] = await Promise.all([
-          AsyncStorage.getItem(SALES_STORAGE_KEY),
-          AsyncStorage.getItem(ORDERS_STORAGE_KEY),
-        ]);
+        const storedSales = await AsyncStorage.getItem(SALES_STORAGE_KEY);
         if (storedSales) setSales(JSON.parse(storedSales));
-        if (storedOrders) setOrders(JSON.parse(storedOrders));
       } catch (error) {
         console.error("Failed to load data", error);
       }
@@ -232,17 +194,6 @@ export default function HomeScreen() {
       );
     } catch (error) {
       console.error("Failed to save sales data", error);
-    }
-  };
-
-  const saveOrdersToStorage = async (updatedOrders: Order[]) => {
-    try {
-      await AsyncStorage.setItem(
-        ORDERS_STORAGE_KEY,
-        JSON.stringify(updatedOrders)
-      );
-    } catch (error) {
-      console.error("Failed to save orders data", error);
     }
   };
 
@@ -304,67 +255,6 @@ export default function HomeScreen() {
     setIsClearModalVisible(false);
   };
 
-  // Orders Handlers
-  const handleAddToPendingOrder = () => {
-    const count = parseInt(newOrderCount);
-    if (isNaN(count) || count <= 0) {
-      Alert.alert("Invalid Input", "Please enter a valid order count.");
-      return;
-    }
-    const product = PRODUCTS.find((p) => p.id === selectedOrderProductId)!;
-    const unitPrice = product.sizePrices?.[selectedOrderSize] || product.price;
-    const totalAmount = unitPrice * count;
-    const categoryInfo =
-      CATEGORY_DATA.find((c) => c.name === product.category) ||
-      CATEGORY_DATA[0];
-
-    const newOrder: Order = {
-      id: Date.now().toString(),
-      productId: product.id,
-      productName: product.name,
-      productImage: product.image,
-      category: product.category,
-      count,
-      amount: totalAmount,
-      size: selectedOrderSize,
-      date: newOrderDate,
-      time: newOrderTime,
-      color: categoryInfo.color,
-      pickupLocation: STORE_LOCATION,
-    };
-
-    setPendingOrders([...pendingOrders, newOrder]);
-    setNewOrderCount(""); // Reset count for next item
-  };
-
-  const handleRemovePendingOrder = (id: string) => {
-    setPendingOrders(pendingOrders.filter((o) => o.id !== id));
-  };
-
-  const handleSaveAllOrders = async () => {
-    if (pendingOrders.length === 0) {
-      Alert.alert("Empty List", "Please add at least one product to the list.");
-      return;
-    }
-    const updatedOrders = [...pendingOrders, ...orders];
-    setOrders(updatedOrders);
-    await saveOrdersToStorage(updatedOrders);
-
-    setIsOrderModalVisible(false);
-    setPendingOrders([]);
-    setNewOrderCount("");
-    setSelectedOrderProductId(PRODUCTS[0].id);
-    setSelectedOrderSize(PRODUCTS[0].sizes[0]);
-    setNewOrderDate(getCurrentDate());
-    setNewOrderTime(getCurrentTime());
-  };
-
-  const handleClearOrders = async () => {
-    setOrders([]);
-    await saveOrdersToStorage([]);
-    setIsClearOrdersModalVisible(false);
-  };
-
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
@@ -374,9 +264,6 @@ export default function HomeScreen() {
   };
 
   const selectedProduct = PRODUCTS.find((p) => p.id === selectedProductId)!;
-  const selectedOrderProduct = PRODUCTS.find(
-    (p) => p.id === selectedOrderProductId
-  )!;
 
   return (
     <ThemedView style={styles.container}>
@@ -550,71 +437,6 @@ export default function HomeScreen() {
             <View style={styles.emptySales}>
               <ThemedText style={styles.emptySalesText}>
                 No sales recorded.
-              </ThemedText>
-            </View>
-          )}
-        </View>
-
-        {/* Orders Section */}
-        <View style={[styles.section, { paddingTop: 0 }]}>
-          <View style={styles.sectionHeader}>
-            <ThemedText type="subtitle">Orders</ThemedText>
-            <View style={styles.headerActions}>
-              <TouchableOpacity
-                onPress={() => setIsOrderModalVisible(true)}
-                style={styles.iconButton}
-              >
-                <IconSymbol name="plus.circle.fill" size={20} color="#34C759" />
-              </TouchableOpacity>
-              {orders.length > 0 && (
-                <TouchableOpacity
-                  onPress={() => setIsClearOrdersModalVisible(true)}
-                  style={[styles.iconButton, { marginLeft: 12 }]}
-                >
-                  <IconSymbol name="trash.fill" size={20} color="#FF3B30" />
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
-          {orders.length > 0 ? (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.salesScroll}
-            >
-              {orders.map((order) => (
-                <View key={order.id} style={styles.salesCard}>
-                  <View style={styles.salesImageContainer}>
-                    <Image
-                      source={order.productImage}
-                      style={styles.salesProductImage}
-                      contentFit="contain"
-                    />
-                  </View>
-                  <View style={styles.salesInfo}>
-                    <ThemedText style={styles.salesCategory}>
-                      {order.productName} • {order.size}
-                    </ThemedText>
-                    <ThemedText style={styles.salesAmount}>
-                      {order.count} Orders • {formatCurrency(order.amount)}
-                    </ThemedText>
-                    <ThemedText
-                      style={styles.orderPickupLocation}
-                      numberOfLines={1}
-                    >
-                      📍 Pickup: Vaishnavi Sales
-                    </ThemedText>
-                    <ThemedText style={styles.salesTimestamp}>
-                      {formatDate(order.date)} • {formatTime(order.time)}
-                    </ThemedText>
-                  </View>
-                </View>
-              ))}
-            </ScrollView>
-          ) : (
-            <View style={styles.emptySales}>
-              <ThemedText style={styles.emptySalesText}>
-                No orders recorded.
               </ThemedText>
             </View>
           )}
@@ -817,17 +639,17 @@ export default function HomeScreen() {
         </View>
       </Modal>
 
-      {/* Add Order Modal */}
+      {/* Add Sale Modal */}
       <Modal
-        visible={isOrderModalVisible}
+        visible={isModalVisible}
         transparent
         animationType="slide"
-        onRequestClose={() => setIsOrderModalVisible(false)}
+        onRequestClose={() => setIsModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { maxHeight: "90%" }]}>
             <ThemedText type="subtitle" style={styles.modalTitle}>
-              Add New Orders
+              Add New Sales
             </ThemedText>
 
             <ScrollView showsVerticalScrollIndicator={false}>
@@ -843,12 +665,12 @@ export default function HomeScreen() {
                     key={product.id}
                     style={[
                       styles.productPickerItem,
-                      selectedOrderProductId === product.id &&
+                      selectedProductId === product.id &&
                         styles.productPickerItemActive,
                     ]}
                     onPress={() => {
-                      setSelectedOrderProductId(product.id);
-                      setSelectedOrderSize(product.sizes[0]);
+                      setSelectedProductId(product.id);
+                      setSelectedSize(product.sizes[0]);
                     }}
                   >
                     <Image
@@ -859,7 +681,7 @@ export default function HomeScreen() {
                     <ThemedText
                       style={[
                         styles.productPickerName,
-                        selectedOrderProductId === product.id &&
+                        selectedProductId === product.id &&
                           styles.productPickerTextActive,
                       ]}
                       numberOfLines={1}
@@ -872,19 +694,19 @@ export default function HomeScreen() {
 
               <ThemedText style={styles.inputLabel}>Select Size</ThemedText>
               <View style={styles.categoryPicker}>
-                {selectedOrderProduct.sizes.map((size) => (
+                {selectedProduct.sizes.map((size) => (
                   <TouchableOpacity
                     key={size}
                     style={[
                       styles.pickerItem,
-                      selectedOrderSize === size && styles.pickerItemActive,
+                      selectedSize === size && styles.pickerItemActive,
                     ]}
-                    onPress={() => setSelectedOrderSize(size)}
+                    onPress={() => setSelectedSize(size)}
                   >
                     <ThemedText
                       style={[
                         styles.pickerText,
-                        selectedOrderSize === size && styles.pickerTextActive,
+                        selectedSize === size && styles.pickerTextActive,
                       ]}
                     >
                       {size}
@@ -895,51 +717,33 @@ export default function HomeScreen() {
 
               <View style={styles.modalInputRow}>
                 <View style={{ flex: 1 }}>
-                  <ThemedText style={styles.inputLabel}>Quantity</ThemedText>
-                  <TextInput
-                    style={styles.modalInput}
-                    placeholder="Count"
-                    placeholderTextColor="rgba(255,255,255,0.3)"
-                    keyboardType="numeric"
-                    value={newOrderCount}
-                    onChangeText={setNewOrderCount}
-                  />
-                </View>
-                <View style={{ flex: 1, marginLeft: 12 }}>
-                  <ThemedText style={styles.inputLabel}>Total</ThemedText>
+                  <ThemedText style={styles.inputLabel}>Price</ThemedText>
                   <View style={styles.priceDisplay}>
-                    <ThemedText
-                      style={[styles.priceDisplayText, { fontSize: 16 }]}
-                    >
+                    <ThemedText style={styles.priceDisplayText}>
                       {formatCurrency(
-                        (selectedOrderProduct.sizePrices?.[selectedOrderSize] ||
-                          selectedOrderProduct.price) *
-                          (parseInt(newOrderCount) || 0)
+                        selectedProduct.sizePrices?.[selectedSize] ||
+                          selectedProduct.price
                       )}
                     </ThemedText>
                   </View>
                 </View>
+                <TouchableOpacity
+                  style={styles.addToListButton}
+                  onPress={handleAddToPendingSale}
+                >
+                  <IconSymbol name="plus" size={20} color="#FFF" />
+                  <ThemedText style={styles.addToListText}>
+                    Add to List
+                  </ThemedText>
+                </TouchableOpacity>
               </View>
 
-              <TouchableOpacity
-                style={[
-                  styles.addToListButton,
-                  { alignSelf: "center", width: "100%", marginBottom: 24 },
-                ]}
-                onPress={handleAddToPendingOrder}
-              >
-                <IconSymbol name="plus" size={20} color="#FFF" />
-                <ThemedText style={styles.addToListText}>
-                  Add to List
-                </ThemedText>
-              </TouchableOpacity>
-
-              {pendingOrders.length > 0 && (
+              {pendingSales.length > 0 && (
                 <View style={styles.pendingSection}>
                   <ThemedText style={styles.inputLabel}>
-                    Pending Items ({pendingOrders.length})
+                    Pending Items ({pendingSales.length})
                   </ThemedText>
-                  {pendingOrders.map((item) => (
+                  {pendingSales.map((item) => (
                     <View key={item.id} style={styles.pendingItem}>
                       <View style={styles.pendingItemInfo}>
                         <ThemedText
@@ -949,11 +753,11 @@ export default function HomeScreen() {
                           {item.productName} • {item.size}
                         </ThemedText>
                         <ThemedText style={styles.pendingItemPrice}>
-                          {item.count} Units • {formatCurrency(item.amount)}
+                          {formatCurrency(item.amount)}
                         </ThemedText>
                       </View>
                       <TouchableOpacity
-                        onPress={() => handleRemovePendingOrder(item.id)}
+                        onPress={() => handleRemovePendingSale(item.id)}
                       >
                         <IconSymbol
                           name="trash.fill"
@@ -973,8 +777,8 @@ export default function HomeScreen() {
                     style={styles.modalInput}
                     placeholder="YYYY-MM-DD"
                     placeholderTextColor="rgba(255,255,255,0.3)"
-                    value={newOrderDate}
-                    onChangeText={setNewOrderDate}
+                    value={newSaleDate}
+                    onChangeText={setNewSaleDate}
                   />
                 </View>
                 <View style={{ flex: 1, marginLeft: 12 }}>
@@ -983,8 +787,8 @@ export default function HomeScreen() {
                     style={styles.modalInput}
                     placeholder="HH:MM"
                     placeholderTextColor="rgba(255,255,255,0.3)"
-                    value={newOrderTime}
-                    onChangeText={setNewOrderTime}
+                    value={newSaleTime}
+                    onChangeText={setNewSaleTime}
                   />
                 </View>
               </View>
@@ -994,8 +798,8 @@ export default function HomeScreen() {
               <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => {
-                  setIsOrderModalVisible(false);
-                  setPendingOrders([]);
+                  setIsModalVisible(false);
+                  setPendingSales([]);
                 }}
               >
                 <ThemedText style={styles.buttonText}>Cancel</ThemedText>
@@ -1006,7 +810,7 @@ export default function HomeScreen() {
                   styles.addButton,
                   { backgroundColor: "#34C759" },
                 ]}
-                onPress={handleSaveAllOrders}
+                onPress={handleSaveAllSales}
               >
                 <ThemedText style={styles.buttonText}>Save All</ThemedText>
               </TouchableOpacity>
@@ -1059,12 +863,12 @@ export default function HomeScreen() {
         </View>
       </Modal>
 
-      {/* Custom Clear Confirmation Modal (Orders) */}
+      {/* Custom Clear Confirmation Modal (Sales) */}
       <Modal
-        visible={isClearOrdersModalVisible}
+        visible={isClearModalVisible}
         transparent
         animationType="fade"
-        onRequestClose={() => setIsClearOrdersModalVisible(false)}
+        onRequestClose={() => setIsClearModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, styles.clearModalContent]}>
@@ -1077,24 +881,24 @@ export default function HomeScreen() {
             </View>
 
             <ThemedText type="subtitle" style={styles.modalTitle}>
-              Clear All Orders?
+              Clear All Sales?
             </ThemedText>
 
             <ThemedText style={styles.modalMessage}>
-              This will permanently remove all orders recorded. This action
+              This will permanently remove all sales recorded. This action
               cannot be undone.
             </ThemedText>
 
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setIsClearOrdersModalVisible(false)}
+                onPress={() => setIsClearModalVisible(false)}
               >
                 <ThemedText style={styles.buttonText}>Cancel</ThemedText>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.confirmButton]}
-                onPress={handleClearOrders}
+                onPress={handleClearSales}
               >
                 <ThemedText style={styles.buttonText}>Clear All</ThemedText>
               </TouchableOpacity>

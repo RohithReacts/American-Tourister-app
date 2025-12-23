@@ -3,6 +3,7 @@ import { ThemedView } from "@/components/themed-view";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useCart } from "@/context/CartContext";
 import { generateInvoice } from "@/utils/invoiceGenerator";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
@@ -33,6 +34,51 @@ export default function CartScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const orderId = Math.random().toString(36).substring(7).toUpperCase();
     setLastOrderId(orderId);
+
+    // Save order to AsyncStorage for "My Orders"
+    try {
+      const currentDate = new Date();
+      const dateStr = currentDate.toISOString().split("T")[0]; // YYYY-MM-DD
+      const timeStr = currentDate.toTimeString().split(" ")[0].substring(0, 5); // HH:MM
+
+      // Calculate total quantity
+      const totalQuantity = cartItems.reduce(
+        (sum, item) => sum + item.quantity,
+        0
+      );
+
+      // Get first product for representative data (or could combine all products)
+      const firstItem = cartItems[0];
+
+      const newOrder = {
+        id: orderId,
+        productId: firstItem.id,
+        productName:
+          cartItems.length > 1 ? `${cartItems.length} items` : firstItem.name,
+        productImage: firstItem.image,
+        category: firstItem.category || "Luggage",
+        count: totalQuantity,
+        amount: totalAmount,
+        size: cartItems.length > 1 ? "Multiple" : firstItem.selectedSize,
+        date: dateStr,
+        time: timeStr,
+        color: "#34C759",
+        pickupLocation: STORE_INFO.address,
+      };
+
+      // Load existing orders
+      const ordersJson = await AsyncStorage.getItem("@orders_data");
+      const existingOrders = ordersJson ? JSON.parse(ordersJson) : [];
+
+      // Add new order to beginning of array
+      const updatedOrders = [newOrder, ...existingOrders];
+
+      // Save back to storage
+      await AsyncStorage.setItem("@orders_data", JSON.stringify(updatedOrders));
+    } catch (error) {
+      console.error("Failed to save order:", error);
+    }
+
     setIsSuccessModalVisible(true);
   };
 
