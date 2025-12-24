@@ -48,8 +48,9 @@ const CATEGORY_DATA = [
   { name: "Hard Luggage", icon: "suitcase.fill", color: "#FF3B30" },
   { name: "Soft Luggage", icon: "bag.fill", color: "#007AFF" },
   { name: "Backpacks", icon: "backpack.fill", color: "#34C759" },
-  { name: "Kids", icon: "face.smiling.fill", color: "#AF52DE" },
+  { name: "Kids", icon: "figure.child", color: "#AF52DE" },
   { name: "Accessories", icon: "cube.box.fill", color: "#FF9F0A" },
+  { name: "Office", icon: "briefcase.fill", color: "#5856D6" },
 ];
 
 const SALES_STORAGE_KEY = "@sales_data";
@@ -395,54 +396,29 @@ export default function HomeScreen() {
           </View>
 
           <View style={styles.quickActions}>
-            <TouchableOpacity
-              style={styles.actionCard}
-              onPress={() => handleCategoryPress("Hard Luggage")}
-            >
-              <View style={[styles.iconCircle, { backgroundColor: "#FF3B30" }]}>
-                <IconSymbol name="suitcase.fill" size={24} color="#FFF" />
-              </View>
-              <ThemedText style={styles.actionLabel}>Hard Luggage</ThemedText>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionCard}
-              onPress={() => handleCategoryPress("Soft Luggage")}
-            >
-              <View style={[styles.iconCircle, { backgroundColor: "#007AFF" }]}>
-                <IconSymbol name="bag.fill" size={24} color="#FFF" />
-              </View>
-              <ThemedText style={styles.actionLabel}>Soft Luggage</ThemedText>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionCard}
-              onPress={() => handleCategoryPress("Backpacks")}
-            >
-              <View style={[styles.iconCircle, { backgroundColor: "#34C759" }]}>
-                <IconSymbol name="backpack.fill" size={24} color="#FFF" />
-              </View>
-              <ThemedText style={styles.actionLabel}>Backpacks</ThemedText>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.actionCard}
-              onPress={() => handleCategoryPress("Kids")}
-            >
-              <View style={[styles.iconCircle, { backgroundColor: "#AF52DE" }]}>
-                <IconSymbol name="figure.wave.fill" size={24} color="#FFF" />
-              </View>
-              <ThemedText style={styles.actionLabel}>Kids</ThemedText>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionCard}
-              onPress={() => handleCategoryPress("Accessories")}
-            >
-              <View style={[styles.iconCircle, { backgroundColor: "#FF9F0A" }]}>
-                <IconSymbol name="shippingbox.fill" size={24} color="#FFF" />
-              </View>
-              <ThemedText style={styles.actionLabel}>Accessories</ThemedText>
-            </TouchableOpacity>
+            {CATEGORY_DATA.map((category) => (
+              <TouchableOpacity
+                key={category.name}
+                style={styles.actionCard}
+                onPress={() => handleCategoryPress(category.name)}
+              >
+                <View
+                  style={[
+                    styles.iconCircle,
+                    { backgroundColor: category.color },
+                  ]}
+                >
+                  <IconSymbol
+                    name={category.icon as any}
+                    size={24}
+                    color="#FFF"
+                  />
+                </View>
+                <ThemedText style={styles.actionLabel}>
+                  {category.name}
+                </ThemedText>
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
 

@@ -50,6 +50,9 @@ const CATEGORY_DATA = [
   { name: "Hard Luggage", icon: "suitcase.fill", color: "#FF3B30" },
   { name: "Soft Luggage", icon: "bag.fill", color: "#007AFF" },
   { name: "Backpacks", icon: "backpack.fill", color: "#34C759" },
+  { name: "Kids", icon: "figure.child", color: "#AF52DE" },
+  { name: "Accessories", icon: "cube.box.fill", color: "#FF9F0A" },
+  { name: "Office", icon: "briefcase.fill", color: "#5856D6" },
 ];
 
 const ORDERS_STORAGE_KEY = "@orders_data";

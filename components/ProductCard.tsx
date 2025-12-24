@@ -108,17 +108,7 @@ const styles = StyleSheet.create({
     width: "100%",
     position: "relative",
   },
-  wishlistButton: {
-    position: "absolute",
-    top: 8,
-    right: 8,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 1,
-  },
+
   image: {
     height: "100%",
     width: "100%",

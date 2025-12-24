@@ -11,7 +11,8 @@ export interface Product {
     | "Duffles"
     | "Backpacks"
     | "Kids"
-    | "Accessories";
+    | "Accessories"
+    | "Office";
   rating: number;
   reviews: number;
   sizes: string[];
@@ -419,4 +420,5 @@ export const CATEGORIES = [
   "Backpacks",
   "Kids",
   "Accessories",
+  "Office",
 ];

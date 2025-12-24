@@ -59,6 +59,13 @@ const MAPPING: IconMapping = {
   "person.badge.minus.fill": "person-remove",
   "xmark.circle.fill": "cancel",
   "checkmark.circle.fill": "check-circle",
+  "figure.wave.fill": "face",
+  "face.smiling.fill": "face",
+  "figure.child": "child-care",
+  "shippingbox.fill": "category",
+  "cube.box.fill": "category",
+  "map.fill": "map",
+  "briefcase.fill": "work",
 };
 
 /**
@@ -78,12 +85,8 @@ export function IconSymbol({
   style?: StyleProp<TextStyle>;
   weight?: SymbolWeight;
 }) {
+  const iconName = MAPPING[name] || name;
   return (
-    <MaterialIcons
-      color={color}
-      size={size}
-      name={MAPPING[name]}
-      style={style}
-    />
+    <MaterialIcons color={color} size={size} name={iconName} style={style} />
   );
 }
