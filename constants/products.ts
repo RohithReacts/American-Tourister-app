@@ -10,6 +10,7 @@ export interface Product {
     | "Soft Luggage"
     | "Duffles"
     | "Backpacks"
+    | "Kids"
     | "Accessories";
   rating: number;
   reviews: number;
@@ -179,6 +180,235 @@ export const PRODUCTS: Product[] = [
       "62cm": 4170,
     },
   },
+  {
+    id: "covo",
+    name: "Covo",
+    description:
+      "Gym, Zumba or even last minute cabin luggage, the list is endless when it comes to using COVO - our dobby polyester non-wheeled duffle bag. COVO not only comes with spacious side pockets, making it perfect for carrying shoes and gym accessories, but its detachable shoulder strap and grab handle define the 'grab-and-go' lifestyle. On top of that, its inner mesh zippered pocket and outer pockets ensure that all your essentials have a place so that finding them doesn't become a hassle. If you still need more convincing, then the 1-year international warranty on COVO will surely seal the deal!",
+    price: 1680,
+    mrp: 2100,
+    image: require("@/assets/images/covo.jpg"),
+    category: "Duffles",
+    rating: 4.9,
+    reviews: 210,
+    sizes: ["52cm"],
+    sizePrices: {
+      "52cm": 1680,
+    },
+    sizeMrps: {
+      "52cm": 2100,
+    },
+  },
+  {
+    id: "leatus",
+    name: "Leatus",
+    description:
+      "Leatus is our fashion-forward full-body twill fabric non-wheeled duffle that exudes elegance. This duffle with its trendy and comes with a 1-year international warranty, a detachable shoulder strap, fully lined interiors, and a front zippered pocket. No wonder Leatus is the ultimate duffle bag for your travel sojourns!",
+    price: 1960,
+    mrp: 2450,
+    image: require("@/assets/images/leatus.jpg"),
+    category: "Duffles",
+    rating: 4.9,
+    reviews: 210,
+    sizes: ["45cm"],
+    sizePrices: {
+      "45cm": 1960,
+    },
+    sizeMrps: {
+      "45cm": 2450,
+    },
+  },
+  {
+    id: "siesta",
+    name: "Siesta",
+    description:
+      "The American Tourister Siesta Duffle Bag is a perfect combination of simplicity, strength, and style. Crafted with high-quality fabric, it offers long-lasting durability while remaining lightweight for easy carrying.",
+    price: 1149.75,
+    mrp: 1533,
+    image: require("@/assets/images/siesta.jpg"),
+    category: "Duffles",
+    rating: 4.9,
+    reviews: 210,
+    sizes: ["52cm"],
+    sizePrices: {
+      "52cm": 1149.75,
+    },
+    sizeMrps: {
+      "52cm": 1533,
+    },
+  },
+  {
+    id: "flex",
+    name: "Flex",
+    description:
+      "Travel smart with the American Tourister Flex Duffle Bag, designed for comfort, durability, and modern style. Made from premium quality polyester fabric, this duffle is lightweight yet strong enough to handle daily use, gym workouts, and short trips.",
+    price: 1350,
+    mrp: 1800,
+    image: require("@/assets/images/flex.jpg"),
+    category: "Duffles",
+    rating: 4.9,
+    reviews: 210,
+    sizes: ["52cm"],
+    sizePrices: {
+      "52cm": 1350,
+    },
+    sizeMrps: {
+      "52cm": 1800,
+    },
+  },
+  {
+    id: "fastforward",
+    name: "Fast Forward",
+    description:
+      "Travel smart with the American Tourister Fastword 55cm Cabin Luggage, designed to meet most airline cabin size regulations. Crafted with a durable hardside shell, this compact spinner offers double wheels for smooth gliding, a TSA combination lock for secure travel, and an expander for extra packing space when needed. Its lightweight structure makes it ideal for short getaways or business trips, while the sleek design keeps you stylish on the move. Comes with a 3-year international warranty for added peace of mind.",
+    price: 4750.2,
+    mrp: 7917,
+    image: require("@/assets/images/fastforward.jpg"),
+    category: "Hard Luggage",
+    rating: 4.9,
+    reviews: 210,
+    sizes: ["55cm", "68cm", "78cm"],
+    sizePrices: {
+      "55cm": 4750.2,
+      "68cm": 5940,
+      "78cm": 7099.8,
+    },
+    sizeMrps: {
+      "55cm": 7917,
+      "68cm": 9900,
+      "78cm": 11833,
+    },
+  },
+  {
+    id: "diamo",
+    name: "Diamo",
+    description:
+      "The American Tourister Diamo 55cm Cabin Spinner is a perfect blend of style and practicality for short trips and weekend getaways. Designed with a distinctive groove pattern, it adds a modern, fashionable edge to your travel look. Equipped with smooth double wheels for effortless movement, a secure TSA combination lock, and multiple internal pockets, this compact suitcase makes organizing essentials a breeze. Its vibrant color options add a touch of personality, while the 3-year international warranty offers reliable peace of mind on every adventure.",
+    price: 3490,
+    mrp: 6980,
+    image: require("@/assets/images/diamo.jpg"),
+    category: "Hard Luggage",
+    rating: 4.9,
+    reviews: 210,
+    sizes: ["55cm", "77cm"],
+    sizePrices: {
+      "55cm": 3490,
+
+      "77cm": 5100,
+    },
+    sizeMrps: {
+      "55cm": 6980,
+
+      "77cm": 10200,
+    },
+  },
+  {
+    id: "elbrus",
+    name: "Elbrus",
+    description:
+      "The Elbrus+ 55cm Cabin Spinner is a sleek and durable carry-on designed for short trips and hassle-free travel. Crafted with a sturdy hardside shell, it ensures superior protection while remaining lightweight. The expander feature provides extra packing space when needed, while the TSA combination lock enhances security. Its double wheels offer smooth 360° maneuverability, making it easy to navigate through airports and city streets. Designed for style and functionality, this suitcase is backed by a 3-year international warranty for long-lasting reliability.",
+    price: 4440,
+    mrp: 7400,
+    image: require("@/assets/images/elbrus.jpg"),
+    category: "Hard Luggage",
+    rating: 4.9,
+    reviews: 210,
+    sizes: ["55cm", "68cm", "79cm"],
+    sizePrices: {
+      "55cm": 4440,
+      "68cm": 5400,
+      "79cm": 6480,
+    },
+    sizeMrps: {
+      "55cm": 7400,
+      "68cm": 9000,
+      "79cm": 10800,
+    },
+  },
+  {
+    id: "circurity +",
+    name: "Circurity +",
+    description:
+      "Introducing Circurity, the ultimate travel companion. Our cutting-edge 3-point lock hardside luggage, crafted with durable polypropylene, ensures your belongings stay secure. Maneuver with ease, thanks to the smooth double wheels, making every journey a breeze. Plus, choose from three stunning colors to reflect your style. Elevate your travel experience with Circurity – where innovation meets style. Travel smarter, travel Circurity.",
+    price: 4290,
+    mrp: 8580,
+    image: require("@/assets/images/circurity.jpg"),
+    category: "Hard Luggage",
+    rating: 4.9,
+    reviews: 210,
+    sizes: ["55cm", "68cm", "78cm"],
+    sizePrices: {
+      "55cm": 4290,
+      "68cm": 5200,
+      "78cm": 6200,
+    },
+    sizeMrps: {
+      "55cm": 8580,
+      "68cm": 10400,
+      "78cm": 12400,
+    },
+  },
+  {
+    id: "alcove",
+    name: "Alcove",
+    description:
+      "The Alcove+ 56cm Cabin Spinner is a sleek and compact travel companion, ideal for short trips and business travel. Featuring a durable hardside shell, it offers excellent protection while remaining lightweight. The PlentiVol 20:80 book opening concept provides maximum packing space, making organization effortless. Shock lock wheels ensure smooth maneuverability, while the TSA combination lock adds extra security. Whether for a weekend getaway or a business trip, this suitcase offers style, functionality, and reliability, backed by a 3-year international warranty.",
+    price: 5070,
+    mrp: 8450,
+    image: require("@/assets/images/alcove.jpg"),
+    category: "Hard Luggage",
+    rating: 4.9,
+    reviews: 10,
+    sizes: ["55cm", "67cm", "77cm"],
+    sizePrices: {
+      "55cm": 5070,
+      "67cm": 6360,
+      "77cm": 7650,
+    },
+    sizeMrps: {
+      "55cm": 8450,
+      "67cm": 10600,
+      "77cm": 12750,
+    },
+  },
+  {
+    id: "skiddle",
+    name: "Skiddle",
+    description:
+      "The American Tourister Skiddle 39.5cm Small Suitcase is designed especially for kids, combining fun, functionality, and security in a compact size. Crafted with a durable hardside shell, this suitcase features playful and unique designs that appeal to both boys and girls, making travel exciting. The 2-point lock system ensures added security, keeping belongings safe while on the go. Designed for effortless maneuverability, the suitcase is equipped with smooth double wheels that glide easily across various surfaces, making it easy for kids to handle. Its compact size is perfect for short trips, school excursions, or family vacations. Backed by a 3-year international warranty, the Skiddle suitcase ensures long-lasting durability and reliability, giving parents peace of mind while kids enjoy their travel adventures.",
+    price: 2850.05,
+    mrp: 3353,
+    image: require("@/assets/images/kid.jpg"),
+    category: "Kids",
+    rating: 4.9,
+    reviews: 10,
+    sizes: ["40cm"],
+    sizePrices: {
+      "40cm": 2850.05,
+    },
+    sizeMrps: {
+      "40cm": 3353,
+    },
+  },
+  {
+    id: "the smurfs",
+    name: "The Smurfs",
+    description:
+      "Let your child travel in style with the American Tourister x The Smurfs 53cm Kids Luggage, a playful and practical suitcase inspired by the beloved Smurfs characters. Designed especially for young globetrotters, this fun-sized hardside luggage features vibrant Smurfs-themed graphics, making every trip feel like an adventure. The durable and lightweight build ensures easy handling for kids, while the 53cm cabin-friendly size is perfect for vacations, school trips, or family getaways. With smooth-rolling wheels, a comfortable top handle, and a secure closure system, it’s made for convenience. Backed by a 3-year international warranty, this licensed collaboration adds a splash of imagination to every journey.",
+    price: 3920,
+    mrp: 4900,
+    image: require("@/assets/images/kid1.jpg"),
+    category: "Kids",
+    rating: 4.9,
+    reviews: 10,
+    sizes: ["53cm"],
+    sizePrices: {
+      "53cm": 3920,
+    },
+    sizeMrps: {
+      "53cm": 4900,
+    },
+  },
 ];
 
 export const CATEGORIES = [
@@ -187,5 +417,6 @@ export const CATEGORIES = [
   "Soft Luggage",
   "Duffles",
   "Backpacks",
+  "Kids",
   "Accessories",
 ];

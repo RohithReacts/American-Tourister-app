@@ -66,7 +66,7 @@ export default function CartScreen() {
         size: cartItems.length > 1 ? "Multiple" : firstItem.selectedSize,
         date: dateStr,
         time: timeStr,
-        color: "#34C759",
+        status: "pending",
         pickupLocation: STORE_INFO.address,
       };
 

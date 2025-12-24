@@ -14,6 +14,7 @@ import React, { useEffect, useState } from "react";
 import {
   Alert,
   Modal,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Switch,
@@ -37,6 +38,7 @@ interface Order {
   time: string;
   color: string;
   pickupLocation: string;
+  status?: "pending" | "confirmed" | "no_stock";
 }
 
 const STORE_LOCATION =
@@ -86,6 +88,20 @@ export default function ProfileScreen() {
   const [selectedOrderForBill, setSelectedOrderForBill] =
     useState<Order | null>(null);
   const [isInvoiceModalVisible, setIsInvoiceModalVisible] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const storedOrders = await AsyncStorage.getItem(ORDERS_STORAGE_KEY);
+      if (storedOrders) setOrders(JSON.parse(storedOrders));
+    } catch (error) {
+      console.error("Failed to refresh orders", error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
+
   const { user, isAdmin, toggleAdmin, logout } = useAuth();
   const { tab } = useLocalSearchParams();
 
@@ -235,6 +251,58 @@ export default function ProfileScreen() {
     setIsInvoiceModalVisible(true);
   };
 
+  const handleConfirmOrder = async (order: Order) => {
+    try {
+      // 1. Load existing sales
+      const storedSales = await AsyncStorage.getItem("@sales_data");
+      const sales = storedSales ? JSON.parse(storedSales) : [];
+
+      // 2. Create new sale from order
+      const newSale = {
+        id: Date.now().toString(),
+        productId: order.productId,
+        productName: order.productName,
+        productImage: order.productImage,
+        category: order.category,
+        amount: order.amount,
+        size: order.size,
+        date: new Date().toISOString().split("T")[0],
+        time: new Date().toTimeString().split(" ")[0].substring(0, 5),
+        color: order.color || "#007AFF",
+      };
+
+      // 3. Save to sales
+      const updatedSales = [newSale, ...sales];
+      await AsyncStorage.setItem("@sales_data", JSON.stringify(updatedSales));
+
+      // 4. Update order status
+      const updatedOrders = orders.map((o) =>
+        o.id === order.id ? { ...o, status: "confirmed" as const } : o
+      );
+      setOrders(updatedOrders);
+      await saveOrdersToStorage(updatedOrders);
+
+      Alert.alert("Success", "Order confirmed and added to sales!");
+    } catch (error) {
+      console.error("Failed to confirm order:", error);
+      Alert.alert("Error", "Failed to confirm order.");
+    }
+  };
+
+  const handleNoStockOrder = async (order: Order) => {
+    try {
+      const updatedOrders = orders.map((o) =>
+        o.id === order.id ? { ...o, status: "no_stock" as const } : o
+      );
+      setOrders(updatedOrders);
+      await saveOrdersToStorage(updatedOrders);
+      Alert.alert("Success", "Order marked as No Stock.");
+    } catch (error) {
+      console.error("Failed to update order status:", error);
+      Alert.alert("Error", "Failed to update order status.");
+    }
+  };
+
   const handleDownloadOrderInvoice = async () => {
     if (!selectedOrderForBill) return;
 
@@ -299,7 +367,17 @@ export default function ProfileScreen() {
           <View style={{ width: 40 }} />
         </View>
 
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#007AFF"
+              colors={["#007AFF"]}
+            />
+          }
+        >
           <View style={styles.ordersSection}>
             <View style={styles.sectionHeader}>
               <ThemedText type="subtitle">Orders</ThemedText>
@@ -332,30 +410,79 @@ export default function ProfileScreen() {
                     style={styles.orderCard}
                     onPress={() => handleOrderClick(order)}
                   >
-                    <View style={styles.orderImageContainer}>
-                      <Image
-                        source={order.productImage}
-                        style={styles.orderProductImage}
-                        contentFit="contain"
-                      />
+                    <View style={styles.orderTopRow}>
+                      <View style={styles.orderImageContainer}>
+                        <Image
+                          source={order.productImage}
+                          style={styles.orderProductImage}
+                          contentFit="contain"
+                        />
+                      </View>
+                      <View style={styles.orderInfo}>
+                        <ThemedText style={styles.orderCategory}>
+                          {order.productName} • {order.size}
+                        </ThemedText>
+                        <ThemedText style={styles.orderAmount}>
+                          {order.count} Orders • {formatCurrency(order.amount)}
+                        </ThemedText>
+                        <ThemedText
+                          style={styles.orderPickupLocation}
+                          numberOfLines={1}
+                        >
+                          📍 Pickup: Vaishnavi Sales
+                        </ThemedText>
+                        <ThemedText style={styles.orderTimestamp}>
+                          {formatDate(order.date)} • {formatTime(order.time)}
+                        </ThemedText>
+                      </View>
+                      {order.status === "confirmed" && (
+                        <View style={styles.confirmedBadge}>
+                          <IconSymbol
+                            name="checkmark.circle.fill"
+                            size={14}
+                            color="#34C759"
+                          />
+                          <ThemedText style={styles.confirmedText}>
+                            Confirmed
+                          </ThemedText>
+                        </View>
+                      )}
+                      {order.status === "no_stock" && (
+                        <View style={styles.noStockBadge}>
+                          <IconSymbol
+                            name="exclamationmark.triangle.fill"
+                            size={14}
+                            color="#FF9500"
+                          />
+                          <ThemedText style={styles.noStockBadgeText}>
+                            No Stock
+                          </ThemedText>
+                        </View>
+                      )}
                     </View>
-                    <View style={styles.orderInfo}>
-                      <ThemedText style={styles.orderCategory}>
-                        {order.productName} • {order.size}
-                      </ThemedText>
-                      <ThemedText style={styles.orderAmount}>
-                        {order.count} Orders • {formatCurrency(order.amount)}
-                      </ThemedText>
-                      <ThemedText
-                        style={styles.orderPickupLocation}
-                        numberOfLines={1}
-                      >
-                        📍 Pickup: Vaishnavi Sales
-                      </ThemedText>
-                      <ThemedText style={styles.orderTimestamp}>
-                        {formatDate(order.date)} • {formatTime(order.time)}
-                      </ThemedText>
-                    </View>
+
+                    {isAdmin &&
+                      order.status !== "confirmed" &&
+                      order.status !== "no_stock" && (
+                        <View style={styles.orderActions}>
+                          <TouchableOpacity
+                            style={styles.confirmOrderButton}
+                            onPress={() => handleConfirmOrder(order)}
+                          >
+                            <ThemedText style={styles.confirmOrderText}>
+                              Confirm
+                            </ThemedText>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.noStockButton}
+                            onPress={() => handleNoStockOrder(order)}
+                          >
+                            <ThemedText style={styles.noStockText}>
+                              No Stock
+                            </ThemedText>
+                          </TouchableOpacity>
+                        </View>
+                      )}
                   </TouchableOpacity>
                 ))}
               </View>
@@ -718,6 +845,14 @@ export default function ProfileScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: 20 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#007AFF"
+            colors={["#007AFF"]}
+          />
+        }
       >
         <View style={styles.menuSection}>
           {menuItems.map((item, index) => (
@@ -901,13 +1036,16 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   orderCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.05)",
-    padding: 12,
+    padding: 16,
+    backgroundColor: "rgba(255,255,255,0.03)",
     borderRadius: 16,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.1)",
+    marginBottom: 12,
+  },
+  orderTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   orderImageContainer: {
     width: 60,
@@ -949,6 +1087,70 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     opacity: 0.6,
     marginTop: 2,
+  },
+  orderActions: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.05)",
+  },
+  confirmOrderButton: {
+    backgroundColor: "#007AFF",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+    flex: 1,
+    alignItems: "center",
+  },
+  confirmOrderText: {
+    color: "#FFF",
+    fontSize: 14,
+    fontWeight: "bold",
+  },
+  noStockButton: {
+    backgroundColor: "rgba(255, 149, 0, 0.1)",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "rgba(255, 149, 0, 0.2)",
+    flex: 1,
+    alignItems: "center",
+  },
+  noStockText: {
+    color: "#FF9500",
+    fontSize: 14,
+    fontWeight: "bold",
+  },
+  confirmedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(52, 199, 89, 0.1)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    gap: 4,
+  },
+  confirmedText: {
+    color: "#34C759",
+    fontSize: 10,
+    fontWeight: "bold",
+  },
+  noStockBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255, 149, 0, 0.1)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    gap: 4,
+  },
+  noStockBadgeText: {
+    color: "#FF9500",
+    fontSize: 10,
+    fontWeight: "bold",
   },
   emptyOrders: {
     padding: 40,

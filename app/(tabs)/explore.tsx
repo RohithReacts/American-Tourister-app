@@ -8,6 +8,7 @@ import { Image } from "expo-image";
 import { useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
+  RefreshControl,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -19,6 +20,15 @@ export default function ExploreScreen() {
   const params = useLocalSearchParams<{ category?: string }>();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    // Simulate a refresh delay
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 1500);
+  }, []);
 
   useEffect(() => {
     if (params.category) {
@@ -81,6 +91,14 @@ export default function ExploreScreen() {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#007AFF"
+            colors={["#007AFF"]}
+          />
+        }
       >
         <View style={styles.grid}>
           {filteredProducts.map((product) => (

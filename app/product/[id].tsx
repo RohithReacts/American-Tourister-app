@@ -79,31 +79,40 @@ export default function ProductDetailsScreen() {
               <ThemedText type="title" style={styles.name}>
                 {product.name}
               </ThemedText>
-              <View style={styles.priceContainer}>
+            </View>
+            <View style={styles.priceSection}>
+              <View style={styles.priceRow}>
                 <ThemedText style={styles.priceText}>
                   ₹
                   {(
                     product.sizePrices?.[selectedSize] ?? product.price
                   ).toLocaleString("en-IN")}
                 </ThemedText>
-                <View style={styles.mrpRow}>
-                  <ThemedText style={styles.mrpText}>
-                    ₹
+                <ThemedText style={styles.mrpText}>
+                  ₹
+                  {(
+                    product.sizeMrps?.[selectedSize] ?? product.mrp
+                  ).toLocaleString("en-IN")}
+                </ThemedText>
+                <View style={styles.saveBadge}>
+                  <ThemedText style={styles.saveBadgeText}>
+                    SAVE ₹
                     {(
-                      product.sizeMrps?.[selectedSize] ?? product.mrp
+                      (product.sizeMrps?.[selectedSize] ?? product.mrp) -
+                      (product.sizePrices?.[selectedSize] ?? product.price)
                     ).toLocaleString("en-IN")}
-                  </ThemedText>
-                  <ThemedText style={styles.discountText}>
-                    {Math.round(
-                      (((product.sizeMrps?.[selectedSize] ?? product.mrp) -
-                        (product.sizePrices?.[selectedSize] ?? product.price)) /
-                        (product.sizeMrps?.[selectedSize] ?? product.mrp)) *
-                        100
-                    )}
-                    % OFF
                   </ThemedText>
                 </View>
               </View>
+              <ThemedText style={styles.discountLabel}>
+                {Math.round(
+                  (((product.sizeMrps?.[selectedSize] ?? product.mrp) -
+                    (product.sizePrices?.[selectedSize] ?? product.price)) /
+                    (product.sizeMrps?.[selectedSize] ?? product.mrp)) *
+                    100
+                )}
+                % OFF
+              </ThemedText>
             </View>
           </View>
 
@@ -175,6 +184,15 @@ export default function ProductDetailsScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
+        <View style={styles.footerPriceContainer}>
+          <ThemedText style={styles.footerPriceLabel}>Total Price</ThemedText>
+          <ThemedText style={styles.footerPriceValue}>
+            ₹
+            {(
+              product.sizePrices?.[selectedSize] ?? product.price
+            ).toLocaleString("en-IN")}
+          </ThemedText>
+        </View>
         {addedToCart ? (
           <TouchableOpacity
             style={[styles.cartButton, styles.addedButton]}
@@ -253,29 +271,44 @@ const styles = StyleSheet.create({
     flex: 1,
     lineHeight: 28,
   },
-  priceContainer: {
-    alignItems: "flex-end",
+  priceSection: {
+    marginTop: 12,
   },
-  priceText: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#007AFF",
-  },
-  mrpRow: {
+  priceRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    marginTop: 2,
+    gap: 12,
+  },
+  priceText: {
+    fontSize: 32,
+    fontWeight: "900",
+    color: "#007AFF",
   },
   mrpText: {
-    fontSize: 13,
+    fontSize: 16,
     opacity: 0.4,
     textDecorationLine: "line-through",
+    marginTop: 4,
   },
-  discountText: {
+  saveBadge: {
+    backgroundColor: "rgba(52, 199, 89, 0.15)",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "rgba(52, 199, 89, 0.2)",
+  },
+  saveBadgeText: {
     color: "#34C759",
-    fontSize: 13,
+    fontSize: 12,
+    fontWeight: "800",
+    letterSpacing: 0.5,
+  },
+  discountLabel: {
+    color: "#34C759",
+    fontSize: 14,
     fontWeight: "700",
+    marginTop: 4,
   },
   ratingRow: {
     flexDirection: "row",
@@ -367,10 +400,27 @@ const styles = StyleSheet.create({
     opacity: 1,
   },
   footer: {
-    padding: 24,
+    padding: 20,
     paddingBottom: 40,
     borderTopWidth: 1,
     borderTopColor: "rgba(255,255,255,0.05)",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 20,
+    backgroundColor: "#000",
+  },
+  footerPriceContainer: {
+    flex: 1,
+  },
+  footerPriceLabel: {
+    fontSize: 12,
+    opacity: 0.5,
+    marginBottom: 2,
+  },
+  footerPriceValue: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#FFF",
   },
   cartButton: {
     backgroundColor: "#007AFF",
@@ -380,6 +430,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     gap: 12,
+    flex: 1.5,
   },
   addedButton: {
     backgroundColor: "#34C759",

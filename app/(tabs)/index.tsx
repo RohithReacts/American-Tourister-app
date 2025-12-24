@@ -15,6 +15,7 @@ import {
   Dimensions,
   Linking,
   Modal,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -85,6 +86,20 @@ export default function HomeScreen() {
   const [sales, setSales] = useState<Sale[]>([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isClearModalVisible, setIsClearModalVisible] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const storedSales = await AsyncStorage.getItem(SALES_STORAGE_KEY);
+      if (storedSales) setSales(JSON.parse(storedSales));
+      await getCurrentLocation();
+    } catch (error) {
+      console.error("Failed to refresh data", error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
 
   // New Sale State
   const [selectedProductId, setSelectedProductId] = useState(PRODUCTS[0].id);
@@ -269,7 +284,17 @@ export default function HomeScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#007AFF"
+            colors={["#007AFF"]}
+          />
+        }
+      >
         {/* Dashboard Header */}
         <View style={styles.dashboardHeader}>
           <View style={styles.headerTop}>
