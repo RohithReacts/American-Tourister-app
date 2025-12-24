@@ -1,6 +1,7 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { SuccessModal } from "@/components/ui/SuccessModal";
 import { useAuth } from "@/context/AuthContext";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
@@ -30,6 +31,15 @@ export default function AccountDetailsScreen() {
   const [email, setEmail] = useState(user?.email || "");
   const [avatar, setAvatar] = useState(user?.avatar || DEFAULT_AVATAR);
   const [isSaving, setIsSaving] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  React.useEffect(() => {
+    if (user && !isEditing) {
+      setName(user.name || "");
+      setEmail(user.email || "");
+      setAvatar(user.avatar || DEFAULT_AVATAR);
+    }
+  }, [user, isEditing]);
 
   const handlePickImage = async () => {
     if (!isEditing) return;
@@ -58,7 +68,7 @@ export default function AccountDetailsScreen() {
 
     if (result.success) {
       setIsEditing(false);
-      Alert.alert("Success", "Profile updated successfully");
+      setShowSuccessModal(true);
     } else {
       Alert.alert("Error", result.message || "Failed to update profile");
     }
@@ -80,13 +90,14 @@ export default function AccountDetailsScreen() {
     },
     {
       label: "Member Since",
-      value: new Date(
-        parseInt(user?.id || Date.now().toString())
-      ).toLocaleDateString("en-IN", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      }),
+      value: new Date(user?.createdAt || Date.now()).toLocaleDateString(
+        "en-IN",
+        {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        }
+      ),
       icon: "calendar.badge.clock",
       readonly: true,
     },
@@ -142,7 +153,12 @@ export default function AccountDetailsScreen() {
                 <ThemedText type="subtitle" style={styles.userName}>
                   {user?.name}
                 </ThemedText>
-                <ThemedText style={styles.userEmail}>{user?.email}</ThemedText>
+                <ThemedText
+                  style={[styles.userEmail, { textAlign: "center" }]}
+                  numberOfLines={0}
+                >
+                  {user?.email}
+                </ThemedText>
               </>
             )}
           </View>
@@ -172,7 +188,12 @@ export default function AccountDetailsScreen() {
                       }
                     />
                   ) : (
-                    <ThemedText style={styles.infoValue}>
+                    <ThemedText
+                      style={[
+                        styles.infoValue,
+                        info.key === "email" && { fontSize: 14 },
+                      ]}
+                    >
                       {info.value}
                     </ThemedText>
                   )}
@@ -196,6 +217,13 @@ export default function AccountDetailsScreen() {
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <SuccessModal
+        visible={showSuccessModal}
+        message="Your profile has been updated successfully."
+        onClose={() => setShowSuccessModal(false)}
+        buttonText="OK"
+      />
     </ThemedView>
   );
 }

@@ -13,6 +13,7 @@ export interface User {
   email: string;
   password?: string;
   avatar?: string;
+  createdAt?: number;
 }
 
 interface AuthContextType {
@@ -40,6 +41,10 @@ interface AuthContextType {
   updateUser: (
     updates: Partial<User>
   ) => Promise<{ success: boolean; message?: string }>;
+  getAllUsers: () => Promise<User[]>;
+  deleteUser: (
+    userId: string
+  ) => Promise<{ success: boolean; message?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -47,6 +52,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const USERS_STORAGE_KEY = "@users_list";
 const CURRENT_USER_KEY = "@current_user";
 const ADMIN_STORAGE_KEY = "@is_admin";
+const ADMIN_PROFILE_KEY = "@admin_profile";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -78,6 +84,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
+      // Check for default admin
+      if (
+        email.toLowerCase() === "admin@americantourister.com" &&
+        password === "admin123"
+      ) {
+        // Check if there's a stored admin profile
+        const storedAdminProfile = await AsyncStorage.getItem(
+          ADMIN_PROFILE_KEY
+        );
+        const adminUser: User = storedAdminProfile
+          ? JSON.parse(storedAdminProfile)
+          : {
+              id: "admin",
+              name: "Admin",
+              email: "admin@americantourister.com",
+              createdAt: 1734950400000, // Fixed date for admin: Dec 23, 2024
+            };
+
+        setUser(adminUser);
+        setIsAdmin(true);
+        await Promise.all([
+          AsyncStorage.setItem(CURRENT_USER_KEY, JSON.stringify(adminUser)),
+          AsyncStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(true)),
+        ]);
+        return { success: true };
+      }
+
       const storedUsers = await AsyncStorage.getItem(USERS_STORAGE_KEY);
       const users: User[] = storedUsers ? JSON.parse(storedUsers) : [];
 
@@ -117,6 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         name,
         email,
         password,
+        createdAt: Date.now(),
       };
       const updatedUsers = [...users, newUser];
 
@@ -196,6 +230,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       if (!user) return { success: false, message: "No user logged in" };
 
+      // Special handling for default admin
+      if (user.id === "admin") {
+        const updatedAdmin = { ...user, ...updates };
+        setUser(updatedAdmin);
+        await Promise.all([
+          AsyncStorage.setItem(CURRENT_USER_KEY, JSON.stringify(updatedAdmin)),
+          AsyncStorage.setItem(ADMIN_PROFILE_KEY, JSON.stringify(updatedAdmin)),
+        ]);
+        return { success: true };
+      }
+
       const storedUsers = await AsyncStorage.getItem(USERS_STORAGE_KEY);
       const users: User[] = storedUsers ? JSON.parse(storedUsers) : [];
 
@@ -222,6 +267,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const getAllUsers = async (): Promise<User[]> => {
+    try {
+      const storedUsers = await AsyncStorage.getItem(USERS_STORAGE_KEY);
+      return storedUsers ? JSON.parse(storedUsers) : [];
+    } catch (error) {
+      console.error("Failed to fetch users", error);
+      return [];
+    }
+  };
+
+  const deleteUser = async (
+    userId: string
+  ): Promise<{ success: boolean; message?: string }> => {
+    try {
+      const storedUsers = await AsyncStorage.getItem(USERS_STORAGE_KEY);
+      const users: User[] = storedUsers ? JSON.parse(storedUsers) : [];
+
+      const updatedUsers = users.filter((u) => u.id !== userId);
+      await AsyncStorage.setItem(
+        USERS_STORAGE_KEY,
+        JSON.stringify(updatedUsers)
+      );
+
+      return { success: true };
+    } catch (error) {
+      return { success: false, message: "Failed to delete user" };
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -235,6 +309,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         forgotPassword,
         resetPassword,
         updateUser,
+        getAllUsers,
+        deleteUser,
       }}
     >
       {children}

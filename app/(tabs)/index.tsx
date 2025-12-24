@@ -15,6 +15,7 @@ import {
   Dimensions,
   Linking,
   Modal,
+  Platform,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -47,6 +48,8 @@ const CATEGORY_DATA = [
   { name: "Hard Luggage", icon: "suitcase.fill", color: "#FF3B30" },
   { name: "Soft Luggage", icon: "bag.fill", color: "#007AFF" },
   { name: "Backpacks", icon: "backpack.fill", color: "#34C759" },
+  { name: "Kids", icon: "face.smiling.fill", color: "#AF52DE" },
+  { name: "Accessories", icon: "cube.box.fill", color: "#FF9F0A" },
 ];
 
 const SALES_STORAGE_KEY = "@sales_data";
@@ -79,7 +82,7 @@ const formatTime = (timeStr: string) => {
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
   const featuredProducts = PRODUCTS.filter((p) => p.isFeatured);
 
   // Sales State
@@ -299,9 +302,8 @@ export default function HomeScreen() {
         <View style={styles.dashboardHeader}>
           <View style={styles.headerTop}>
             <View>
-              <ThemedText style={styles.welcomeText}>Welcome back</ThemedText>
               <ThemedText type="title" style={styles.userName}>
-                Traveler
+                {user?.name?.split(" ")[0] || "Traveler"}
               </ThemedText>
             </View>
             <View style={styles.logoContainer}>
@@ -349,32 +351,47 @@ export default function HomeScreen() {
           </View>
 
           {/* Store Location */}
+          {/* Store Location */}
           <View style={styles.storeLocationContainer}>
             <View style={styles.storeLocationHeader}>
-              <IconSymbol name="suitcase.fill" size={22} color="#34C759" />
-              <ThemedText style={styles.storeLocationLabel}>
-                PICKUP STORE
-              </ThemedText>
+              <View style={styles.storeIconContainer}>
+                <IconSymbol name="mappin.and.ellipse" size={24} color="#FFF" />
+              </View>
+              <View style={{ flex: 1, justifyContent: "center" }}>
+                <ThemedText style={styles.storeLocationLabel}>
+                  PICKUP STORE
+                </ThemedText>
+                <ThemedText style={styles.storeNameText} numberOfLines={1}>
+                  Vaishnavi Sales
+                </ThemedText>
+              </View>
             </View>
 
-            <View style={styles.addressSection}>
-              <IconSymbol name="location.fill" size={18} color="#34C759" />
-              <ThemedText style={styles.storeLocationText}>
-                {STORE_LOCATION}
-              </ThemedText>
-            </View>
+            <View style={styles.storeActionsRow}>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={handlePhoneCall}
+              >
+                <IconSymbol name="phone.fill" size={16} color="#FFF" />
+                <ThemedText style={styles.actionButtonText}>Call</ThemedText>
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.phoneSection}
-              onPress={handlePhoneCall}
-              activeOpacity={0.7}
-            >
-              <IconSymbol name="phone.fill" size={18} color="#34C759" />
-              <ThemedText style={styles.storePhoneText}>
-                {STORE_PHONE}
-              </ThemedText>
-              <ThemedText style={styles.tapToCallText}>Tap to call</ThemedText>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.primaryActionButton]}
+                onPress={() => {
+                  const url = Platform.select({
+                    ios: `maps:0,0?q=${encodeURIComponent(STORE_LOCATION)}`,
+                    android: `geo:0,0?q=${encodeURIComponent(STORE_LOCATION)}`,
+                  });
+                  Linking.openURL(url || "");
+                }}
+              >
+                <IconSymbol name="map.fill" size={16} color="#FFF" />
+                <ThemedText style={styles.actionButtonText}>
+                  Directions
+                </ThemedText>
+              </TouchableOpacity>
+            </View>
           </View>
 
           <View style={styles.quickActions}>
@@ -406,6 +423,25 @@ export default function HomeScreen() {
                 <IconSymbol name="backpack.fill" size={24} color="#FFF" />
               </View>
               <ThemedText style={styles.actionLabel}>Backpacks</ThemedText>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.actionCard}
+              onPress={() => handleCategoryPress("Kids")}
+            >
+              <View style={[styles.iconCircle, { backgroundColor: "#AF52DE" }]}>
+                <IconSymbol name="figure.wave.fill" size={24} color="#FFF" />
+              </View>
+              <ThemedText style={styles.actionLabel}>Kids</ThemedText>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionCard}
+              onPress={() => handleCategoryPress("Accessories")}
+            >
+              <View style={[styles.iconCircle, { backgroundColor: "#FF9F0A" }]}>
+                <IconSymbol name="shippingbox.fill" size={24} color="#FFF" />
+              </View>
+              <ThemedText style={styles.actionLabel}>Accessories</ThemedText>
             </TouchableOpacity>
           </View>
         </View>
@@ -662,182 +698,6 @@ export default function HomeScreen() {
                 <ThemedText style={styles.buttonText}>Cancel</ThemedText>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.modalButton, styles.addButton]}
-                onPress={handleSaveAllSales}
-              >
-                <ThemedText style={styles.buttonText}>Save All</ThemedText>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Add Sale Modal */}
-      <Modal
-        visible={isModalVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setIsModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { maxHeight: "90%" }]}>
-            <ThemedText type="subtitle" style={styles.modalTitle}>
-              Add New Sales
-            </ThemedText>
-
-            <ScrollView showsVerticalScrollIndicator={false}>
-              <ThemedText style={styles.inputLabel}>Select Product</ThemedText>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={styles.productPickerScroll}
-                contentContainerStyle={styles.productPickerContent}
-              >
-                {PRODUCTS.map((product) => (
-                  <TouchableOpacity
-                    key={product.id}
-                    style={[
-                      styles.productPickerItem,
-                      selectedProductId === product.id &&
-                        styles.productPickerItemActive,
-                    ]}
-                    onPress={() => {
-                      setSelectedProductId(product.id);
-                      setSelectedSize(product.sizes[0]);
-                    }}
-                  >
-                    <Image
-                      source={product.image}
-                      style={styles.productPickerImage}
-                      contentFit="contain"
-                    />
-                    <ThemedText
-                      style={[
-                        styles.productPickerName,
-                        selectedProductId === product.id &&
-                          styles.productPickerTextActive,
-                      ]}
-                      numberOfLines={1}
-                    >
-                      {product.name}
-                    </ThemedText>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-
-              <ThemedText style={styles.inputLabel}>Select Size</ThemedText>
-              <View style={styles.categoryPicker}>
-                {selectedProduct.sizes.map((size) => (
-                  <TouchableOpacity
-                    key={size}
-                    style={[
-                      styles.pickerItem,
-                      selectedSize === size && styles.pickerItemActive,
-                    ]}
-                    onPress={() => setSelectedSize(size)}
-                  >
-                    <ThemedText
-                      style={[
-                        styles.pickerText,
-                        selectedSize === size && styles.pickerTextActive,
-                      ]}
-                    >
-                      {size}
-                    </ThemedText>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              <View style={styles.modalInputRow}>
-                <View style={{ flex: 1 }}>
-                  <ThemedText style={styles.inputLabel}>Price</ThemedText>
-                  <View style={styles.priceDisplay}>
-                    <ThemedText style={styles.priceDisplayText}>
-                      {formatCurrency(
-                        selectedProduct.sizePrices?.[selectedSize] ||
-                          selectedProduct.price
-                      )}
-                    </ThemedText>
-                  </View>
-                </View>
-                <TouchableOpacity
-                  style={styles.addToListButton}
-                  onPress={handleAddToPendingSale}
-                >
-                  <IconSymbol name="plus" size={20} color="#FFF" />
-                  <ThemedText style={styles.addToListText}>
-                    Add to List
-                  </ThemedText>
-                </TouchableOpacity>
-              </View>
-
-              {pendingSales.length > 0 && (
-                <View style={styles.pendingSection}>
-                  <ThemedText style={styles.inputLabel}>
-                    Pending Items ({pendingSales.length})
-                  </ThemedText>
-                  {pendingSales.map((item) => (
-                    <View key={item.id} style={styles.pendingItem}>
-                      <View style={styles.pendingItemInfo}>
-                        <ThemedText
-                          style={styles.pendingItemName}
-                          numberOfLines={1}
-                        >
-                          {item.productName} • {item.size}
-                        </ThemedText>
-                        <ThemedText style={styles.pendingItemPrice}>
-                          {formatCurrency(item.amount)}
-                        </ThemedText>
-                      </View>
-                      <TouchableOpacity
-                        onPress={() => handleRemovePendingSale(item.id)}
-                      >
-                        <IconSymbol
-                          name="trash.fill"
-                          size={18}
-                          color="#FF3B30"
-                        />
-                      </TouchableOpacity>
-                    </View>
-                  ))}
-                </View>
-              )}
-
-              <View style={styles.modalInputRow}>
-                <View style={{ flex: 1 }}>
-                  <ThemedText style={styles.inputLabel}>Date</ThemedText>
-                  <TextInput
-                    style={styles.modalInput}
-                    placeholder="YYYY-MM-DD"
-                    placeholderTextColor="rgba(255,255,255,0.3)"
-                    value={newSaleDate}
-                    onChangeText={setNewSaleDate}
-                  />
-                </View>
-                <View style={{ flex: 1, marginLeft: 12 }}>
-                  <ThemedText style={styles.inputLabel}>Time</ThemedText>
-                  <TextInput
-                    style={styles.modalInput}
-                    placeholder="HH:MM"
-                    placeholderTextColor="rgba(255,255,255,0.3)"
-                    value={newSaleTime}
-                    onChangeText={setNewSaleTime}
-                  />
-                </View>
-              </View>
-            </ScrollView>
-
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => {
-                  setIsModalVisible(false);
-                  setPendingSales([]);
-                }}
-              >
-                <ThemedText style={styles.buttonText}>Cancel</ThemedText>
-              </TouchableOpacity>
-              <TouchableOpacity
                 style={[
                   styles.modalButton,
                   styles.addButton,
@@ -846,50 +706,6 @@ export default function HomeScreen() {
                 onPress={handleSaveAllSales}
               >
                 <ThemedText style={styles.buttonText}>Save All</ThemedText>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Custom Clear Confirmation Modal (Sales) */}
-      <Modal
-        visible={isClearModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setIsClearModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, styles.clearModalContent]}>
-            <View style={styles.warningIconContainer}>
-              <IconSymbol
-                name="exclamationmark.triangle.fill"
-                size={40}
-                color="#FF3B30"
-              />
-            </View>
-
-            <ThemedText type="subtitle" style={styles.modalTitle}>
-              Clear All Sales?
-            </ThemedText>
-
-            <ThemedText style={styles.modalMessage}>
-              This will permanently remove all sales recorded. This action
-              cannot be undone.
-            </ThemedText>
-
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setIsClearModalVisible(false)}
-              >
-                <ThemedText style={styles.buttonText}>Cancel</ThemedText>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.confirmButton]}
-                onPress={handleClearSales}
-              >
-                <ThemedText style={styles.buttonText}>Clear All</ThemedText>
               </TouchableOpacity>
             </View>
           </View>
@@ -960,10 +776,7 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     marginBottom: 24,
   },
-  welcomeText: {
-    fontSize: 16,
-    opacity: 0.7,
-  },
+
   userName: {
     fontSize: 28,
     fontWeight: "bold",
@@ -1016,65 +829,7 @@ const styles = StyleSheet.create({
     padding: 8,
     marginLeft: 8,
   },
-  storeLocationContainer: {
-    backgroundColor: "rgba(52, 199, 89, 0.08)",
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: "rgba(52, 199, 89, 0.2)",
-    gap: 16,
-  },
-  storeLocationHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    marginBottom: 4,
-  },
-  storeLocationLabel: {
-    color: "#34C759",
-    fontSize: 12,
-    fontWeight: "800",
-    letterSpacing: 1,
-  },
-  addressSection: {
-    flexDirection: "row",
-    gap: 12,
-    alignItems: "flex-start",
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(52, 199, 89, 0.15)",
-  },
-  storeLocationText: {
-    color: "#FFF",
-    fontSize: 14,
-    opacity: 0.95,
-    lineHeight: 20,
-    flex: 1,
-  },
-  phoneSection: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(52, 199, 89, 0.15)",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 14,
-    gap: 12,
-  },
-  storePhoneText: {
-    color: "#34C759",
-    fontSize: 16,
-    fontWeight: "700",
-    flex: 1,
-  },
-  tapToCallText: {
-    color: "#34C759",
-    fontSize: 11,
-    fontWeight: "600",
-    opacity: 0.7,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
+
   orderPickupLocation: {
     fontSize: 11,
     fontWeight: "600",
@@ -1085,6 +840,8 @@ const styles = StyleSheet.create({
   quickActions: {
     flexDirection: "row",
     justifyContent: "space-between",
+    flexWrap: "wrap",
+    rowGap: 16,
   },
   actionCard: {
     alignItems: "center",
@@ -1395,5 +1152,68 @@ const styles = StyleSheet.create({
   },
   confirmButton: {
     backgroundColor: "#FF3B30",
+  },
+  storeLocationContainer: {
+    marginHorizontal: 20,
+    marginBottom: 24,
+    padding: 20,
+    backgroundColor: "#1C1C1E",
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  storeLocationHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  storeIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#007AFF",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 16,
+  },
+  storeLocationLabel: {
+    fontSize: 12,
+    color: "rgba(255,255,255,0.5)",
+    fontWeight: "600",
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
+  storeNameText: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#FFF",
+  },
+  storeActionsRow: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 16,
+  },
+  actionButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.1)",
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 8,
+  },
+  primaryActionButton: {
+    backgroundColor: "#007AFF",
+  },
+  actionButtonText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#FFF",
   },
 });

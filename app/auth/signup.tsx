@@ -1,6 +1,7 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { SuccessModal } from "@/components/ui/SuccessModal";
 import { useAuth } from "@/context/AuthContext";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
@@ -24,6 +25,7 @@ export default function SignupScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const handleSignup = async () => {
     if (!name || !email || !password) {
@@ -36,9 +38,7 @@ export default function SignupScreen() {
     setIsLoading(false);
 
     if (result.success) {
-      Alert.alert("Success", "Account created successfully!", [
-        { text: "OK", onPress: () => router.replace("/(tabs)") },
-      ]);
+      setShowSuccessModal(true);
     } else {
       Alert.alert("Signup Failed", result.message);
     }
@@ -125,6 +125,16 @@ export default function SignupScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <SuccessModal
+        visible={showSuccessModal}
+        message="Your account has been created successfully. Welcome to the family!"
+        onClose={() => {
+          setShowSuccessModal(false);
+          router.replace("/(tabs)");
+        }}
+        buttonText="Get Started"
+      />
     </ThemedView>
   );
 }

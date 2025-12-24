@@ -1,6 +1,8 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { SuccessModal } from "@/components/ui/SuccessModal";
 import { PRODUCTS } from "@/constants/products";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -80,30 +82,83 @@ const formatTime = (timeStr: string) => {
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const { user, isAdmin, toggleAdmin, logout, getAllUsers, deleteUser } =
+    useAuth();
+  const { tab } = useLocalSearchParams();
+
   const [showOrders, setShowOrders] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [isOrderModalVisible, setIsOrderModalVisible] = useState(false);
   const [isClearOrdersModalVisible, setIsClearOrdersModalVisible] =
     useState(false);
   const [selectedOrderForBill, setSelectedOrderForBill] =
     useState<Order | null>(null);
   const [isInvoiceModalVisible, setIsInvoiceModalVisible] = useState(false);
+  const [isUserListVisible, setIsUserListVisible] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [deleteConfirmationVisible, setDeleteConfirmationVisible] =
+    useState(false);
+  const [userToDelete, setUserToDelete] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+
+  const filteredUsers = users.filter(
+    (u) =>
+      (u.name?.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
+      (u.email?.toLowerCase() || "").includes(searchQuery.toLowerCase())
+  );
+
+  const loadUsers = async () => {
+    const allUsers = await getAllUsers();
+    setUsers(allUsers);
+  };
 
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
     try {
       const storedOrders = await AsyncStorage.getItem(ORDERS_STORAGE_KEY);
       if (storedOrders) setOrders(JSON.parse(storedOrders));
+      if (isAdmin) {
+        await loadUsers();
+      }
     } catch (error) {
-      console.error("Failed to refresh orders", error);
+      console.error("Failed to refresh data", error);
     } finally {
       setRefreshing(false);
     }
-  }, []);
+  }, [isAdmin, getAllUsers]); // Added getAllUsers to deps for completeness, though it's stable from context
 
-  const { user, isAdmin, toggleAdmin, logout } = useAuth();
-  const { tab } = useLocalSearchParams();
+  useEffect(() => {
+    if (isAdmin) {
+      loadUsers();
+    }
+  }, [isAdmin]);
+
+  const handleDeleteUser = (userId: string, userName: string) => {
+    setUserToDelete({ id: userId, name: userName });
+    setDeleteConfirmationVisible(true);
+  };
+
+  const confirmDeleteUser = async () => {
+    if (!userToDelete) return;
+
+    setDeleteConfirmationVisible(false);
+    const result = await deleteUser(userToDelete.id);
+
+    if (result.success) {
+      loadUsers();
+      setSuccessMessage(`User ${userToDelete.name} has been removed.`);
+      setShowSuccessModal(true);
+    } else {
+      Alert.alert("Error", result.message || "Failed to delete user");
+    }
+    setUserToDelete(null);
+  };
 
   // Handle deep linking to orders
   useEffect(() => {
@@ -148,6 +203,18 @@ export default function ProfileScreen() {
             isToggle: true,
             value: isAdmin,
             action: toggleAdmin,
+          },
+        ]
+      : []),
+    ...(isAdmin
+      ? [
+          {
+            icon: "person.2.circle.fill",
+            label: `User Management (${users.length})`,
+            action: () => {
+              console.log("Opening User Management Modal");
+              setIsUserListVisible(true);
+            },
           },
         ]
       : []),
@@ -895,6 +962,176 @@ export default function ProfileScreen() {
 
         <ThemedText style={styles.versionText}>Version 1.0.0</ThemedText>
       </ScrollView>
+
+      {/* User Management Modal */}
+      <Modal
+        visible={isUserListVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setIsUserListVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { maxHeight: "80%" }]}>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 20,
+              }}
+            >
+              <ThemedText type="subtitle">User Management</ThemedText>
+              <TouchableOpacity onPress={() => setIsUserListVisible(false)}>
+                <IconSymbol name="xmark.circle.fill" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+
+            <ThemedText style={{ opacity: 0.6, marginBottom: 16 }}>
+              Total Registered Users: {users.length}
+            </ThemedText>
+
+            <View style={styles.searchContainer}>
+              <IconSymbol
+                name="magnifyingglass"
+                size={18}
+                color="rgba(255,255,255,0.4)"
+              />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search by name or email..."
+                placeholderTextColor="rgba(255,255,255,0.3)"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+              {searchQuery !== "" && (
+                <TouchableOpacity onPress={() => setSearchQuery("")}>
+                  <IconSymbol
+                    name="xmark.circle.fill"
+                    size={18}
+                    color="rgba(255,255,255,0.4)"
+                  />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {filteredUsers.length > 0 ? (
+                filteredUsers.map((u) => (
+                  <View key={u.id} style={styles.userCard}>
+                    <View style={styles.userAvatar}>
+                      <ThemedText style={styles.userAvatarText}>
+                        {u.name
+                          .split(" ")
+                          .map((n: string) => n[0])
+                          .join("")
+                          .toUpperCase()
+                          .slice(0, 2)}
+                      </ThemedText>
+                    </View>
+                    <View style={styles.userInfo}>
+                      <ThemedText style={styles.userNameText}>
+                        {u.name}
+                      </ThemedText>
+                      <ThemedText style={styles.userEmailText}>
+                        {u.email}
+                      </ThemedText>
+                      <View style={styles.userDetailsRow}>
+                        <IconSymbol
+                          name="calendar"
+                          size={12}
+                          color="rgba(255,255,255,0.4)"
+                          style={{ marginRight: 4 }}
+                        />
+                        <ThemedText style={styles.userJoinedText}>
+                          Joined{" "}
+                          {new Date(
+                            u.createdAt || Date.now()
+                          ).toLocaleDateString("en-IN", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </ThemedText>
+                      </View>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => handleDeleteUser(u.id, u.name)}
+                      style={styles.removeUserButton}
+                    >
+                      <IconSymbol name="trash.fill" size={18} color="#FF3B30" />
+                    </TouchableOpacity>
+                  </View>
+                ))
+              ) : (
+                <View style={{ padding: 20, alignItems: "center" }}>
+                  <IconSymbol
+                    name="person.2.circle.fill"
+                    size={48}
+                    color="rgba(255,255,255,0.2)"
+                    style={{ marginBottom: 12 }}
+                  />
+                  <ThemedText
+                    style={{
+                      textAlign: "center",
+                      opacity: 0.8,
+                      fontSize: 16,
+                    }}
+                  >
+                    {searchQuery
+                      ? "No users match your search."
+                      : "No registered users found."}
+                  </ThemedText>
+                  {!searchQuery && (
+                    <ThemedText
+                      style={{
+                        textAlign: "center",
+                        opacity: 0.5,
+                        marginTop: 8,
+                        fontSize: 12,
+                      }}
+                    >
+                      New users will appear here after they sign up.
+                    </ThemedText>
+                  )}
+                </View>
+              )}
+            </ScrollView>
+
+            <TouchableOpacity
+              style={[
+                styles.modalButton,
+                styles.cancelButton,
+                { marginTop: 20 },
+              ]}
+              onPress={() => setIsUserListVisible(false)}
+            >
+              <ThemedText style={styles.buttonText}>Close</ThemedText>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Success Modal */}
+      <SuccessModal
+        visible={showSuccessModal}
+        message={successMessage}
+        onClose={() => setShowSuccessModal(false)}
+        buttonText="OK"
+      />
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        visible={deleteConfirmationVisible}
+        title="Delete User"
+        message={`Are you sure you want to delete ${userToDelete?.name}? This action cannot be undone.`}
+        onConfirm={confirmDeleteUser}
+        onCancel={() => {
+          setDeleteConfirmationVisible(false);
+          setUserToDelete(null);
+        }}
+        confirmText="Delete"
+        isDestructive
+      />
     </ThemedView>
   );
 }
@@ -1412,5 +1649,100 @@ const styles = StyleSheet.create({
     color: "#FFF",
     fontSize: 16,
     fontWeight: "bold",
+  },
+  userCard: {
+    flexDirection: "column",
+    alignItems: "center",
+    backgroundColor: "#252525",
+    padding: 20,
+    borderRadius: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+    position: "relative",
+  },
+  userAvatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "#007AFF",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  userAvatarText: {
+    color: "#FFF",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  userNameText: {
+    fontSize: 17,
+    fontWeight: "600",
+    color: "#FFF",
+    marginBottom: 2,
+  },
+  userEmailText: {
+    fontSize: 13,
+    color: "rgba(255,255,255,0.6)",
+    marginBottom: 6,
+  },
+  userIdText: {
+    fontSize: 10,
+    opacity: 0.4,
+    marginTop: 4,
+  },
+  deleteUserButton: {
+    padding: 8,
+    backgroundColor: "rgba(255, 59, 48, 0.1)",
+    borderRadius: 8,
+  },
+  userInfo: {
+    alignItems: "center",
+    width: "100%",
+  },
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.05)",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 44,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+  },
+  searchInput: {
+    flex: 1,
+    color: "#FFF",
+    fontSize: 14,
+    marginLeft: 8,
+  },
+  userDetailsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  userJoinedText: {
+    fontSize: 12,
+    color: "rgba(255,255,255,0.4)",
+  },
+  removeUserButton: {
+    position: "absolute",
+    bottom: 12,
+    right: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(255, 59, 48, 0.15)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  removeText: {
+    display: "none",
   },
 });

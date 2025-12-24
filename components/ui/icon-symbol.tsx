@@ -55,6 +55,10 @@ const MAPPING: IconMapping = {
   "creditcard.fill": "credit-card",
   "bell.fill": "notifications",
   "gearshape.fill": "settings",
+  "person.2.circle.fill": "group",
+  "person.badge.minus.fill": "person-remove",
+  "xmark.circle.fill": "cancel",
+  "checkmark.circle.fill": "check-circle",
 };
 
 /**

@@ -4,6 +4,7 @@ import {
   ThemeProvider,
 } from "@react-navigation/native";
 import { Stack, useRouter } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 
@@ -17,14 +18,20 @@ export const unstable_settings = {
   anchor: "(tabs)",
 };
 
+// Prevent the splash screen from auto-hiding before asset loading is complete.
+SplashScreen.preventAutoHideAsync();
+
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
   const { user, isLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && !user) {
-      router.replace("/auth/login");
+    if (!isLoading) {
+      SplashScreen.hideAsync();
+      if (!user) {
+        router.replace("/auth/login");
+      }
     }
   }, [user, isLoading]);
 
