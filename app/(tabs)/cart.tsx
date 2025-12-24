@@ -1,6 +1,7 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
@@ -12,6 +13,7 @@ import {
   Modal,
   ScrollView,
   StyleSheet,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -24,9 +26,14 @@ const STORE_INFO = {
 
 export default function CartScreen() {
   const { cartItems, removeFromCart, totalAmount, clearCart } = useCart();
+  const { user } = useAuth();
   const router = useRouter();
   const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
   const [lastOrderId, setLastOrderId] = useState("");
+  const [scheduledDate, setScheduledDate] = useState<"Today" | "Tomorrow">(
+    "Today"
+  );
+  const [scheduledTime, setScheduledTime] = useState("");
 
   const handleCheckout = async () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -36,8 +43,13 @@ export default function CartScreen() {
     // Save order to AsyncStorage for "My Orders"
     try {
       const currentDate = new Date();
+      if (scheduledDate === "Tomorrow") {
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
       const dateStr = currentDate.toISOString().split("T")[0]; // YYYY-MM-DD
-      const timeStr = currentDate.toTimeString().split(" ")[0].substring(0, 5); // HH:MM
+      const timeStr =
+        scheduledTime ||
+        currentDate.toTimeString().split(" ")[0].substring(0, 5); // HH:MM
 
       // Calculate total quantity
       const totalQuantity = cartItems.reduce(
@@ -55,6 +67,7 @@ export default function CartScreen() {
 
       const newOrder = {
         id: orderId,
+        userId: user?.id || "guest",
         productId: firstItem.id,
         productName:
           cartItems.length > 1 ? `${cartItems.length} items` : firstItem.name,
@@ -170,6 +183,43 @@ export default function CartScreen() {
       )}
 
       <View style={styles.footer}>
+        <View style={styles.schedulingSection}>
+          <ThemedText type="subtitle" style={styles.sectionTitle}>
+            Schedule Pickup
+          </ThemedText>
+          <View style={styles.dateRow}>
+            {["Today", "Tomorrow"].map((date) => (
+              <TouchableOpacity
+                key={date}
+                style={[
+                  styles.dateChip,
+                  scheduledDate === date && styles.dateChipActive,
+                ]}
+                onPress={() => setScheduledDate(date as "Today" | "Tomorrow")}
+              >
+                <ThemedText
+                  style={[
+                    styles.dateChipText,
+                    scheduledDate === date && styles.dateChipTextActive,
+                  ]}
+                >
+                  {date}
+                </ThemedText>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <View style={styles.timeInputContainer}>
+            <IconSymbol name="clock.fill" size={20} color="#666" />
+            <TextInput
+              style={styles.timeInput}
+              value={scheduledTime}
+              onChangeText={setScheduledTime}
+              placeholder="Enter Time (e.g. 10:00 AM)"
+              placeholderTextColor="#666"
+            />
+          </View>
+        </View>
+
         <View style={styles.totalRow}>
           <ThemedText style={styles.totalLabel}>Total</ThemedText>
           <ThemedText type="subtitle" style={styles.totalAmount}>
@@ -485,5 +535,50 @@ const styles = StyleSheet.create({
     color: "#FFF",
     fontSize: 16,
     fontWeight: "bold",
+  },
+  schedulingSection: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    marginBottom: 12,
+  },
+  dateRow: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 16,
+  },
+  dateChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+  },
+  dateChipActive: {
+    backgroundColor: "#007AFF",
+    borderColor: "#007AFF",
+  },
+  dateChipText: {
+    color: "rgba(255,255,255,0.6)",
+    fontWeight: "600",
+  },
+  dateChipTextActive: {
+    color: "#FFF",
+  },
+  timeInputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 48,
+  },
+  timeInput: {
+    flex: 1,
+    marginLeft: 8,
+    color: "#FFF",
+    fontSize: 16,
   },
 });

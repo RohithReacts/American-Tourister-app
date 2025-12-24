@@ -28,6 +28,7 @@ import { WebView } from "react-native-webview";
 
 interface Order {
   id: string;
+  userId: string;
   productId: string;
   productName: string;
   productImage: any;
@@ -40,7 +41,7 @@ interface Order {
   time: string;
   color: string;
   pickupLocation: string;
-  status?: "pending" | "confirmed" | "no_stock";
+  status?: "pending" | "preparing" | "confirmed" | "no_stock";
 }
 
 const STORE_LOCATION =
@@ -228,13 +229,20 @@ export default function ProfileScreen() {
     const loadOrders = async () => {
       try {
         const storedOrders = await AsyncStorage.getItem(ORDERS_STORAGE_KEY);
-        if (storedOrders) setOrders(JSON.parse(storedOrders));
+        if (storedOrders) {
+          const allOrders: Order[] = JSON.parse(storedOrders);
+          // Filter orders: Admin sees all, User sees only theirs
+          const filteredOrders = isAdmin
+            ? allOrders
+            : allOrders.filter((o) => o.userId === user?.id);
+          setOrders(filteredOrders);
+        }
       } catch (error) {
         console.error("Failed to load orders", error);
       }
     };
     loadOrders();
-  }, []);
+  }, [isAdmin, user]);
 
   const saveOrdersToStorage = async (updatedOrders: Order[]) => {
     try {
@@ -262,6 +270,7 @@ export default function ProfileScreen() {
 
     const newOrder: Order = {
       id: Date.now().toString(),
+      userId: user?.id || "manual",
       productId: product.id,
       productName: product.name,
       productImage: product.image,
@@ -352,7 +361,8 @@ export default function ProfileScreen() {
       setOrders(updatedOrders);
       await saveOrdersToStorage(updatedOrders);
 
-      Alert.alert("Success", "Order confirmed and added to sales!");
+      setSuccessMessage("Order confirmed and added to sales!");
+      setShowSuccessModal(true);
     } catch (error) {
       console.error("Failed to confirm order:", error);
       Alert.alert("Error", "Failed to confirm order.");
@@ -366,7 +376,23 @@ export default function ProfileScreen() {
       );
       setOrders(updatedOrders);
       await saveOrdersToStorage(updatedOrders);
-      Alert.alert("Success", "Order marked as No Stock.");
+      setSuccessMessage("Order marked as No Stock.");
+      setShowSuccessModal(true);
+    } catch (error) {
+      console.error("Failed to update order status:", error);
+      Alert.alert("Error", "Failed to update order status.");
+    }
+  };
+
+  const handlePreparingOrder = async (order: Order) => {
+    try {
+      const updatedOrders = orders.map((o) =>
+        o.id === order.id ? { ...o, status: "preparing" as const } : o
+      );
+      setOrders(updatedOrders);
+      await saveOrdersToStorage(updatedOrders);
+      setSuccessMessage("Order marked as Preparing.");
+      setShowSuccessModal(true);
     } catch (error) {
       console.error("Failed to update order status:", error);
       Alert.alert("Error", "Failed to update order status.");
@@ -529,6 +555,18 @@ export default function ProfileScreen() {
                           </ThemedText>
                         </View>
                       )}
+                      {order.status === "preparing" && (
+                        <View style={styles.preparingBadge}>
+                          <IconSymbol
+                            name="clock.fill"
+                            size={14}
+                            color="#FF9F0A"
+                          />
+                          <ThemedText style={styles.preparingBadgeText}>
+                            Preparing
+                          </ThemedText>
+                        </View>
+                      )}
                     </View>
 
                     {isAdmin &&
@@ -539,14 +577,39 @@ export default function ProfileScreen() {
                             style={styles.confirmOrderButton}
                             onPress={() => handleConfirmOrder(order)}
                           >
+                            <IconSymbol
+                              name="checkmark.circle.fill"
+                              size={16}
+                              color="#FFF"
+                            />
                             <ThemedText style={styles.confirmOrderText}>
                               Confirm
                             </ThemedText>
                           </TouchableOpacity>
+                          {order.status !== "preparing" && (
+                            <TouchableOpacity
+                              style={styles.preparingButton}
+                              onPress={() => handlePreparingOrder(order)}
+                            >
+                              <IconSymbol
+                                name="clock.fill"
+                                size={16}
+                                color="#FF9F0A"
+                              />
+                              <ThemedText style={styles.preparingText}>
+                                Preparing
+                              </ThemedText>
+                            </TouchableOpacity>
+                          )}
                           <TouchableOpacity
                             style={styles.noStockButton}
                             onPress={() => handleNoStockOrder(order)}
                           >
+                            <IconSymbol
+                              name="exclamationmark.triangle.fill"
+                              size={16}
+                              color="#FF9500"
+                            />
                             <ThemedText style={styles.noStockText}>
                               No Stock
                             </ThemedText>
@@ -924,6 +987,44 @@ export default function ProfileScreen() {
           />
         }
       >
+        <View style={styles.header}>
+          <View style={styles.profileInfo}>
+            <TouchableOpacity
+              style={styles.avatarContainer}
+              onPress={() => router.push("/account-details")}
+            >
+              <Image
+                source={
+                  user?.avatar ||
+                  "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=1000&auto=format&fit=crop"
+                }
+                style={styles.avatar}
+              />
+              <View style={styles.editBadge}>
+                <IconSymbol name="pencil" size={14} color="#FFF" />
+              </View>
+            </TouchableOpacity>
+            <ThemedText style={styles.userName}>{user?.name}</ThemedText>
+            <ThemedText style={styles.userEmail}>{user?.email}</ThemedText>
+            <ThemedText
+              style={{
+                fontSize: 12,
+                opacity: 0.5,
+                marginTop: 8,
+                letterSpacing: 0.5,
+              }}
+            >
+              Member Since{" "}
+              {(() => {
+                const date = new Date(user?.createdAt || Date.now());
+                return `${date.getDate()} ${date.toLocaleString("default", {
+                  month: "long",
+                })} ${date.getFullYear()}`;
+              })()}
+            </ThemedText>
+          </View>
+        </View>
+
         <View style={styles.menuSection}>
           {menuItems.map((item, index) => (
             <TouchableOpacity
@@ -1338,58 +1439,102 @@ const styles = StyleSheet.create({
   },
   confirmOrderButton: {
     backgroundColor: "#007AFF",
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingVertical: 10,
     borderRadius: 10,
     flex: 1,
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
   },
   confirmOrderText: {
     color: "#FFF",
-    fontSize: 14,
+    fontSize: 13,
+    fontWeight: "bold",
+  },
+  preparingButton: {
+    backgroundColor: "rgba(255, 159, 10, 0.1)",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "rgba(255, 159, 10, 0.2)",
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  preparingText: {
+    color: "#FF9F0A",
+    fontSize: 13,
     fontWeight: "bold",
   },
   noStockButton: {
     backgroundColor: "rgba(255, 149, 0, 0.1)",
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingVertical: 10,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: "rgba(255, 149, 0, 0.2)",
     flex: 1,
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
   },
   noStockText: {
     color: "#FF9500",
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "bold",
   },
   confirmedBadge: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "rgba(52, 199, 89, 0.1)",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(52, 199, 89, 0.2)",
     gap: 4,
   },
   confirmedText: {
     color: "#34C759",
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: "bold",
   },
   noStockBadge: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "rgba(255, 149, 0, 0.1)",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255, 149, 0, 0.2)",
     gap: 4,
   },
   noStockBadgeText: {
     color: "#FF9500",
-    fontSize: 10,
+    fontSize: 11,
+    fontWeight: "bold",
+  },
+  preparingBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255, 159, 10, 0.1)",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255, 159, 10, 0.2)",
+    gap: 4,
+  },
+  preparingBadgeText: {
+    color: "#FF9F0A",
+    fontSize: 11,
     fontWeight: "bold",
   },
   emptyOrders: {

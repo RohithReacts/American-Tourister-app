@@ -33,11 +33,20 @@ export default function AccountDetailsScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
+  const [memberSince, setMemberSince] = useState("");
+
   React.useEffect(() => {
     if (user && !isEditing) {
       setName(user.name || "");
       setEmail(user.email || "");
       setAvatar(user.avatar || DEFAULT_AVATAR);
+
+      // Format initial date as DD-MM-YYYY
+      const date = new Date(user.createdAt || Date.now());
+      const day = date.getDate().toString().padStart(2, "0");
+      const month = (date.getMonth() + 1).toString().padStart(2, "0");
+      const year = date.getFullYear();
+      setMemberSince(`${day}-${month}-${year}`);
     }
   }, [user, isEditing]);
 
@@ -62,8 +71,29 @@ export default function AccountDetailsScreen() {
       return;
     }
 
+    // Parse memberSince date (DD-MM-YYYY)
+    let createdAt = user?.createdAt;
+    if (memberSince) {
+      const parts = memberSince.split("-");
+      if (parts.length === 3) {
+        const day = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10) - 1; // Months are 0-indexed
+        const year = parseInt(parts[2], 10);
+        const date = new Date(year, month, day);
+        if (!isNaN(date.getTime())) {
+          createdAt = date.getTime();
+        } else {
+          Alert.alert("Error", "Invalid date format. Use DD-MM-YYYY");
+          return;
+        }
+      } else {
+        Alert.alert("Error", "Invalid date format. Use DD-MM-YYYY");
+        return;
+      }
+    }
+
     setIsSaving(true);
-    const result = await updateUser({ name, email, avatar });
+    const result = await updateUser({ name, email, avatar, createdAt });
     setIsSaving(false);
 
     if (result.success) {
@@ -90,16 +120,9 @@ export default function AccountDetailsScreen() {
     },
     {
       label: "Member Since",
-      value: new Date(user?.createdAt || Date.now()).toLocaleDateString(
-        "en-IN",
-        {
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-        }
-      ),
+      value: memberSince,
       icon: "calendar.badge.clock",
-      readonly: true,
+      key: "memberSince",
     },
   ];
 
@@ -178,13 +201,33 @@ export default function AccountDetailsScreen() {
                   {isEditing && !info.readonly ? (
                     <TextInput
                       style={styles.input}
-                      value={info.key === "name" ? name : email}
-                      onChangeText={info.key === "name" ? setName : setEmail}
-                      placeholder={`Enter ${info.label.toLowerCase()}`}
+                      value={
+                        info.key === "name"
+                          ? name
+                          : info.key === "email"
+                          ? email
+                          : memberSince
+                      }
+                      onChangeText={
+                        info.key === "name"
+                          ? setName
+                          : info.key === "email"
+                          ? setEmail
+                          : setMemberSince
+                      }
+                      placeholder={
+                        info.key === "memberSince"
+                          ? "DD-MM-YYYY"
+                          : `Enter ${info.label.toLowerCase()}`
+                      }
                       placeholderTextColor="rgba(255,255,255,0.3)"
                       autoCapitalize={info.key === "email" ? "none" : "words"}
                       keyboardType={
-                        info.key === "email" ? "email-address" : "default"
+                        info.key === "email"
+                          ? "email-address"
+                          : info.key === "memberSince"
+                          ? "numeric"
+                          : "default"
                       }
                     />
                   ) : (
@@ -194,7 +237,20 @@ export default function AccountDetailsScreen() {
                         info.key === "email" && { fontSize: 14 },
                       ]}
                     >
-                      {info.value}
+                      {info.key === "memberSince"
+                        ? (() => {
+                            // Display formatted date when not editing
+                            const date = new Date(
+                              user?.createdAt || Date.now()
+                            );
+                            return `${date.getDate()} ${date.toLocaleString(
+                              "default",
+                              {
+                                month: "long",
+                              }
+                            )} ${date.getFullYear()}`;
+                          })()
+                        : info.value}
                     </ThemedText>
                   )}
                 </View>

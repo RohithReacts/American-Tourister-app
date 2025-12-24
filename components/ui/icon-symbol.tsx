@@ -27,6 +27,7 @@ const MAPPING: IconMapping = {
   "bag.fill": "local-mall",
   "plus.circle.fill": "add-circle",
   "trash.fill": "delete",
+  trash: "delete-outline",
   "exclamationmark.triangle.fill": "warning",
   "location.fill": "location-on",
   "arrow.clockwise": "refresh",
@@ -66,6 +67,8 @@ const MAPPING: IconMapping = {
   "cube.box.fill": "category",
   "map.fill": "map",
   "briefcase.fill": "work",
+  "clock.fill": "access-time",
+  "arrow.down.circle.fill": "cloud-download",
 };
 
 /**
