@@ -69,6 +69,7 @@ const MAPPING: IconMapping = {
   "briefcase.fill": "work",
   "clock.fill": "access-time",
   "arrow.down.circle.fill": "cloud-download",
+  "storefront.fill": "store",
 };
 
 /**

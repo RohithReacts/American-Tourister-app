@@ -3,6 +3,7 @@ import { ThemedView } from "@/components/themed-view";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { OrderProgressTracker } from "@/components/ui/OrderProgressTracker";
+import { OrderStatusBadge } from "@/components/ui/OrderStatusBadge";
 import { SuccessModal } from "@/components/ui/SuccessModal";
 import { PRODUCTS } from "@/constants/products";
 import { useAuth } from "@/context/AuthContext";
@@ -565,76 +566,13 @@ export default function ProfileScreen() {
                         <ThemedText style={styles.orderAmount}>
                           {order.count} Orders • {formatCurrency(order.amount)}
                         </ThemedText>
-                        <ThemedText
-                          style={styles.orderPickupLocation}
-                          numberOfLines={1}
-                        >
+                        <ThemedText style={styles.orderPickupLocation}>
                           📍 Pickup: Vaishnavi Sales
                         </ThemedText>
                         <ThemedText style={styles.orderTimestamp}>
                           {formatDate(order.date)} • {formatTime(order.time)}
                         </ThemedText>
                       </View>
-                      {order.status === "confirmed" && (
-                        <View style={styles.confirmedBadge}>
-                          <IconSymbol
-                            name="checkmark.circle.fill"
-                            size={14}
-                            color="#34C759"
-                          />
-                          <ThemedText style={styles.confirmedText}>
-                            Confirmed
-                          </ThemedText>
-                        </View>
-                      )}
-                      {order.status === "no_stock" && (
-                        <View style={styles.noStockBadge}>
-                          <IconSymbol
-                            name="exclamationmark.triangle.fill"
-                            size={14}
-                            color="#FF9500"
-                          />
-                          <ThemedText style={styles.noStockBadgeText}>
-                            No Stock
-                          </ThemedText>
-                        </View>
-                      )}
-                      {order.status === "preparing" && (
-                        <View style={styles.preparingBadge}>
-                          <IconSymbol
-                            name="clock.fill"
-                            size={14}
-                            color="#FF9F0A"
-                          />
-                          <ThemedText style={styles.preparingBadgeText}>
-                            Preparing
-                          </ThemedText>
-                        </View>
-                      )}
-                      {order.status === "ready" && (
-                        <View style={styles.readyBadge}>
-                          <IconSymbol
-                            name="checkmark.circle.fill"
-                            size={14}
-                            color="#34C759"
-                          />
-                          <ThemedText style={styles.readyBadgeText}>
-                            Ready
-                          </ThemedText>
-                        </View>
-                      )}
-                      {order.status === "picked_up" && (
-                        <View style={styles.pickedUpBadge}>
-                          <IconSymbol
-                            name="bag.fill"
-                            size={14}
-                            color="#34C759"
-                          />
-                          <ThemedText style={styles.pickedUpBadgeText}>
-                            Picked Up
-                          </ThemedText>
-                        </View>
-                      )}
                     </View>
 
                     {/* Order Progress Tracker */}
@@ -728,6 +666,11 @@ export default function ProfileScreen() {
                           </TouchableOpacity>
                         </View>
                       )}
+
+                    {/* Status Badge - At Bottom */}
+                    <View style={styles.orderStatusSection}>
+                      <OrderStatusBadge status={order.status} />
+                    </View>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -1481,32 +1424,40 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   iconButton: {
-    padding: 8,
-    backgroundColor: "rgba(255,255,255,0.05)",
-    borderRadius: 8,
+    padding: 10,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
   },
   ordersListContainer: {
     gap: 12,
   },
   orderCard: {
-    padding: 16,
-    backgroundColor: "rgba(255,255,255,0.03)",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
-    marginBottom: 12,
+    padding: 18,
+    backgroundColor: "rgba(255,255,255,0.04)",
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.12)",
+    marginBottom: 14,
+  },
+  orderStatusSection: {
+    marginTop: 12,
+    alignSelf: "center",
+    width: "100%",
+    alignItems: "center",
   },
   orderTopRow: {
-    flexDirection: "row",
+    flexDirection: "column",
     alignItems: "center",
   },
   orderImageContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 8,
+    width: 120,
+    height: 120,
+    borderRadius: 12,
     backgroundColor: "#FFF",
-    padding: 4,
-    marginRight: 12,
+    padding: 6,
+    marginBottom: 12,
   },
   orderProductImage: {
     width: "100%",
@@ -1515,18 +1466,22 @@ const styles = StyleSheet.create({
   orderInfo: {
     justifyContent: "center",
     flex: 1,
+    alignItems: "center",
+    width: "100%",
   },
   orderCategory: {
-    fontSize: 12,
-    fontWeight: "bold",
-    opacity: 0.8,
+    fontSize: 15,
+    fontWeight: "700",
+    opacity: 0.9,
     textTransform: "uppercase",
     letterSpacing: 0.5,
+    textAlign: "center",
   },
   orderAmount: {
     fontSize: 16,
     fontWeight: "bold",
     marginTop: 4,
+    textAlign: "center",
   },
   orderPickupLocation: {
     fontSize: 11,
@@ -1534,31 +1489,33 @@ const styles = StyleSheet.create({
     opacity: 0.7,
     marginTop: 4,
     color: "#34C759",
+    textAlign: "center",
   },
   orderTimestamp: {
     fontSize: 10,
     fontWeight: "600",
     opacity: 0.6,
     marginTop: 2,
+    textAlign: "center",
   },
   orderActions: {
     flexDirection: "row",
-    gap: 12,
-    marginTop: 16,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.05)",
+    gap: 10,
+    marginTop: 14,
+    paddingTop: 14,
+    borderTopWidth: 1.5,
+    borderTopColor: "rgba(255,255,255,0.08)",
   },
   confirmOrderButton: {
-    backgroundColor: "#007AFF",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 10,
+    backgroundColor: "#34C759",
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    borderRadius: 12,
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
+    gap: 8,
   },
   confirmOrderText: {
     color: "#FFF",
@@ -1604,50 +1561,70 @@ const styles = StyleSheet.create({
   confirmedBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(52, 199, 89, 0.1)",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "rgba(52, 199, 89, 0.2)",
-    gap: 4,
+    backgroundColor: "rgba(52, 199, 89, 0.15)",
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: "rgba(52, 199, 89, 0.3)",
+    gap: 6,
   },
   confirmedText: {
     color: "#34C759",
-    fontSize: 11,
-    fontWeight: "bold",
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 0.3,
   },
   noStockBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255, 149, 0, 0.1)",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "rgba(255, 149, 0, 0.2)",
-    gap: 4,
+    backgroundColor: "rgba(255, 149, 0, 0.15)",
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: "rgba(255, 149, 0, 0.3)",
+    gap: 6,
   },
   noStockBadgeText: {
     color: "#FF9500",
-    fontSize: 11,
-    fontWeight: "bold",
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 0.3,
   },
   preparingBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255, 159, 10, 0.1)",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "rgba(255, 159, 10, 0.2)",
-    gap: 4,
+    backgroundColor: "rgba(255, 159, 10, 0.15)",
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: "rgba(255, 159, 10, 0.3)",
+    gap: 6,
   },
   preparingBadgeText: {
     color: "#FF9F0A",
-    fontSize: 11,
-    fontWeight: "bold",
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 0.3,
+  },
+  pendingBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 122, 255, 0.15)",
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: "rgba(0, 122, 255, 0.3)",
+    gap: 6,
+  },
+  pendingBadgeText: {
+    color: "#007AFF",
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 0.3,
   },
   emptyOrders: {
     padding: 40,
@@ -2007,23 +1984,21 @@ const styles = StyleSheet.create({
   },
   // Ready Badge and Button Styles
   readyBadge: {
-    position: "absolute",
-    top: 12,
-    right: 12,
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
     backgroundColor: "rgba(52, 199, 89, 0.15)",
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 14,
+    borderWidth: 1.5,
     borderColor: "rgba(52, 199, 89, 0.3)",
   },
   readyBadgeText: {
-    fontSize: 11,
-    fontWeight: "600",
+    fontSize: 12,
+    fontWeight: "700",
     color: "#34C759",
+    letterSpacing: 0.3,
   },
   readyButton: {
     flex: 1,
@@ -2043,25 +2018,23 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#34C759",
   },
-  // Picked Up Badge and Button Styles
+  // Picked Up Badge and Button Styles - MOST PROMINENT
   pickedUpBadge: {
-    position: "absolute",
-    top: 12,
-    right: 12,
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    backgroundColor: "rgba(52, 199, 89, 0.15)",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "rgba(52, 199, 89, 0.3)",
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    backgroundColor: "#34C759",
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: "rgba(255, 255, 255, 0.2)",
   },
   pickedUpBadgeText: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#34C759",
+    fontSize: 13,
+    fontWeight: "800",
+    color: "#FFF",
+    letterSpacing: 0.5,
   },
   pickedUpButton: {
     flex: 1,

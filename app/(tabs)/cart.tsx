@@ -4,6 +4,7 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
@@ -13,7 +14,6 @@ import {
   Modal,
   ScrollView,
   StyleSheet,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -30,10 +30,24 @@ export default function CartScreen() {
   const router = useRouter();
   const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
   const [lastOrderId, setLastOrderId] = useState("");
-  const [scheduledDate, setScheduledDate] = useState<"Today" | "Tomorrow">(
-    "Today"
-  );
-  const [scheduledTime, setScheduledTime] = useState("");
+  const [scheduledDate, setScheduledDate] = useState(new Date());
+  const [scheduledTime, setScheduledTime] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+
+  const onDateChange = (event: any, selectedDate?: Date) => {
+    setShowDatePicker(false);
+    if (selectedDate) {
+      setScheduledDate(selectedDate);
+    }
+  };
+
+  const onTimeChange = (event: any, selectedTime?: Date) => {
+    setShowTimePicker(false);
+    if (selectedTime) {
+      setScheduledTime(selectedTime);
+    }
+  };
 
   const handleCheckout = async () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -42,14 +56,12 @@ export default function CartScreen() {
 
     // Save order to AsyncStorage for "My Orders"
     try {
-      const currentDate = new Date();
-      if (scheduledDate === "Tomorrow") {
-        currentDate.setDate(currentDate.getDate() + 1);
-      }
-      const dateStr = currentDate.toISOString().split("T")[0]; // YYYY-MM-DD
-      const timeStr =
-        scheduledTime ||
-        currentDate.toTimeString().split(" ")[0].substring(0, 5); // HH:MM
+      const dateStr = scheduledDate.toISOString().split("T")[0]; // YYYY-MM-DD
+      const timeStr = scheduledTime.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      });
 
       // Calculate total quantity
       const totalQuantity = cartItems.reduce(
@@ -135,7 +147,7 @@ export default function CartScreen() {
           removeFromCart(item.id, item.selectedSize);
         }}
       >
-        <IconSymbol name="trash" size={20} color="#FF3B30" />
+        <IconSymbol name="trash.fill" size={20} color="#FFF" />
       </TouchableOpacity>
     </View>
   );
@@ -161,7 +173,11 @@ export default function CartScreen() {
         >
           <View style={styles.emptyContainer}>
             <View style={styles.iconCircle}>
-              <IconSymbol name="cart" size={64} color="rgba(255,255,255,0.2)" />
+              <IconSymbol
+                name="cart.fill"
+                size={64}
+                color="rgba(255,255,255,0.2)"
+              />
             </View>
             <ThemedText type="subtitle" style={styles.emptyTitle}>
               Your cart is empty
@@ -182,61 +198,80 @@ export default function CartScreen() {
         </ScrollView>
       )}
 
-      <View style={styles.footer}>
-        <View style={styles.schedulingSection}>
-          <ThemedText type="subtitle" style={styles.sectionTitle}>
-            Schedule Pickup
-          </ThemedText>
-          <View style={styles.dateRow}>
-            {["Today", "Tomorrow"].map((date) => (
+      {cartItems.length > 0 && (
+        <View style={styles.footer}>
+          <View style={styles.schedulingSection}>
+            <ThemedText type="subtitle" style={styles.sectionTitle}>
+              Schedule Pickup
+            </ThemedText>
+            <View style={styles.dateRow}>
               <TouchableOpacity
-                key={date}
-                style={[
-                  styles.dateChip,
-                  scheduledDate === date && styles.dateChipActive,
-                ]}
-                onPress={() => setScheduledDate(date as "Today" | "Tomorrow")}
+                style={styles.pickerButton}
+                onPress={() => setShowDatePicker(true)}
               >
-                <ThemedText
-                  style={[
-                    styles.dateChipText,
-                    scheduledDate === date && styles.dateChipTextActive,
-                  ]}
-                >
-                  {date}
+                <IconSymbol name="calendar" size={20} color="#007AFF" />
+                <ThemedText style={styles.pickerButtonText}>
+                  {scheduledDate.toLocaleDateString("en-US", {
+                    weekday: "short",
+                    month: "short",
+                    day: "numeric",
+                  })}
                 </ThemedText>
               </TouchableOpacity>
-            ))}
-          </View>
-          <View style={styles.timeInputContainer}>
-            <IconSymbol name="clock.fill" size={20} color="#666" />
-            <TextInput
-              style={styles.timeInput}
-              value={scheduledTime}
-              onChangeText={setScheduledTime}
-              placeholder="Enter Time (e.g. 10:00 AM)"
-              placeholderTextColor="#666"
-            />
-          </View>
-        </View>
 
-        <View style={styles.totalRow}>
-          <ThemedText style={styles.totalLabel}>Total</ThemedText>
-          <ThemedText type="subtitle" style={styles.totalAmount}>
-            ₹{totalAmount.toLocaleString("en-IN")}
-          </ThemedText>
+              <TouchableOpacity
+                style={styles.pickerButton}
+                onPress={() => setShowTimePicker(true)}
+              >
+                <IconSymbol name="clock.fill" size={20} color="#007AFF" />
+                <ThemedText style={styles.pickerButtonText}>
+                  {scheduledTime.toLocaleTimeString("en-US", {
+                    hour: "numeric",
+                    minute: "2-digit",
+                    hour12: true,
+                  })}
+                </ThemedText>
+              </TouchableOpacity>
+            </View>
+
+            {showDatePicker && (
+              <DateTimePicker
+                value={scheduledDate}
+                mode="date"
+                display="default"
+                onChange={onDateChange}
+                minimumDate={new Date()}
+              />
+            )}
+
+            {showTimePicker && (
+              <DateTimePicker
+                value={scheduledTime}
+                mode="time"
+                display="default"
+                onChange={onTimeChange}
+              />
+            )}
+          </View>
+
+          <View style={styles.totalRow}>
+            <ThemedText style={styles.totalLabel}>Total</ThemedText>
+            <ThemedText type="subtitle" style={styles.totalAmount}>
+              ₹{totalAmount.toLocaleString("en-IN")}
+            </ThemedText>
+          </View>
+          <TouchableOpacity
+            style={[
+              styles.checkoutButton,
+              cartItems.length === 0 && { opacity: 0.5 },
+            ]}
+            disabled={cartItems.length === 0}
+            onPress={handleCheckout}
+          >
+            <ThemedText style={styles.checkoutText}>Checkout</ThemedText>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          style={[
-            styles.checkoutButton,
-            cartItems.length === 0 && { opacity: 0.5 },
-          ]}
-          disabled={cartItems.length === 0}
-          onPress={handleCheckout}
-        >
-          <ThemedText style={styles.checkoutText}>Checkout</ThemedText>
-        </TouchableOpacity>
-      </View>
+      )}
 
       <Modal
         visible={isSuccessModalVisible}
@@ -358,6 +393,13 @@ const styles = StyleSheet.create({
   },
   removeButton: {
     padding: 8,
+    backgroundColor: "#FF3B30",
+    borderRadius: 12,
+    shadowColor: "#FF3B30",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   emptyContent: {
     flexGrow: 1,
@@ -548,37 +590,19 @@ const styles = StyleSheet.create({
     gap: 12,
     marginBottom: 16,
   },
-  dateChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.1)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
-  },
-  dateChipActive: {
-    backgroundColor: "#007AFF",
-    borderColor: "#007AFF",
-  },
-  dateChipText: {
-    color: "rgba(255,255,255,0.6)",
-    fontWeight: "600",
-  },
-  dateChipTextActive: {
-    color: "#FFF",
-  },
-  timeInputContainer: {
+  pickerButton: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "rgba(255,255,255,0.1)",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderRadius: 12,
-    paddingHorizontal: 12,
-    height: 48,
+    gap: 8,
   },
-  timeInput: {
-    flex: 1,
-    marginLeft: 8,
+  pickerButtonText: {
     color: "#FFF",
     fontSize: 16,
+    fontWeight: "600",
   },
 });

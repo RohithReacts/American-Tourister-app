@@ -93,7 +93,7 @@ export function OrderProgressTracker({
                 >
                   <IconSymbol
                     name={stage.icon}
-                    size={12}
+                    size={14}
                     color={
                       isCompleted || isActive ? "#FFF" : "rgba(255,255,255,0.3)"
                     }
@@ -128,7 +128,8 @@ export function OrderProgressTracker({
 
 const styles = StyleSheet.create({
   container: {
-    paddingVertical: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 4,
   },
   progressContainer: {
     flexDirection: "row",
@@ -140,47 +141,51 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   stageCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: "rgba(255,255,255,0.1)",
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "rgba(255,255,255,0.08)",
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.1)",
+    borderColor: "rgba(255,255,255,0.15)",
   },
   stageCircleActive: {
     borderColor: "transparent",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 5,
+    transform: [{ scale: 1.1 }],
   },
   stageCircleCompleted: {
     backgroundColor: "#34C759",
     borderColor: "#34C759",
   },
   stageCircleFuture: {
-    backgroundColor: "rgba(255,255,255,0.05)",
-    borderColor: "rgba(255,255,255,0.1)",
+    backgroundColor: "rgba(255,255,255,0.03)",
+    borderColor: "rgba(255,255,255,0.08)",
   },
   stageLabel: {
-    fontSize: 10,
-    marginTop: 4,
+    fontSize: 11,
+    marginTop: 6,
     opacity: 0.4,
     textAlign: "center",
+    fontWeight: "500",
   },
   stageLabelActive: {
-    opacity: 0.8,
-    fontWeight: "600",
+    opacity: 0.9,
+    fontWeight: "700",
+    fontSize: 12,
   },
   connector: {
-    height: 2,
+    height: 3,
     flex: 0.5,
-    backgroundColor: "rgba(255,255,255,0.1)",
+    backgroundColor: "rgba(255,255,255,0.12)",
     marginHorizontal: -8,
-    marginBottom: 16,
+    marginBottom: 20,
+    borderRadius: 2,
   },
   connectorCompleted: {
     backgroundColor: "#34C759",
@@ -189,16 +194,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    padding: 12,
-    backgroundColor: "rgba(255, 149, 0, 0.1)",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "rgba(255, 149, 0, 0.2)",
-    gap: 8,
+    padding: 14,
+    backgroundColor: "rgba(255, 149, 0, 0.12)",
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: "rgba(255, 149, 0, 0.25)",
+    gap: 10,
   },
   noStockText: {
-    fontSize: 12,
+    fontSize: 13,
     color: "#FF9500",
-    fontWeight: "600",
+    fontWeight: "700",
+    letterSpacing: 0.3,
   },
 });

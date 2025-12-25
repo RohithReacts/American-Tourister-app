@@ -5,12 +5,12 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { PRODUCTS } from "@/constants/products";
 import { useAuth } from "@/context/AuthContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { Image } from "expo-image";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
   Dimensions,
   Linking,
@@ -111,6 +111,17 @@ export default function HomeScreen() {
   const [newSaleDate, setNewSaleDate] = useState(getCurrentDate());
   const [newSaleTime, setNewSaleTime] = useState(getCurrentTime());
   const [pendingSales, setPendingSales] = useState<Sale[]>([]);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  const onDateChange = (event: any, selectedDate?: Date) => {
+    setShowDatePicker(false);
+    if (selectedDate) {
+      const year = selectedDate.getFullYear();
+      const month = String(selectedDate.getMonth() + 1).padStart(2, "0");
+      const day = String(selectedDate.getDate()).padStart(2, "0");
+      setNewSaleDate(`${year}-${month}-${day}`);
+    }
+  };
 
   // Location State
   const [location, setLocation] = useState<Location.LocationObject | null>(
@@ -316,82 +327,85 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          <View style={styles.searchContainer}>
-            <IconSymbol name="location.fill" size={24} color="#007AFF" />
-            <View style={styles.locationTextContainer}>
-              {locationLoading ? (
-                <View style={styles.locationLoadingRow}>
-                  <ActivityIndicator
-                    size="small"
-                    color="rgba(255,255,255,0.7)"
-                  />
-                  <ThemedText style={styles.locationText}>
+          {/* Unified Location Card */}
+          <View style={styles.locationCard}>
+            {/* User Location Section */}
+            <View style={styles.locationSection}>
+              <View style={styles.locationIconContainer}>
+                <IconSymbol name="location.fill" size={20} color="#007AFF" />
+              </View>
+              <View style={styles.locationInfo}>
+                <ThemedText style={styles.locationLabel}>
+                  Your Location
+                </ThemedText>
+                {locationLoading ? (
+                  <ThemedText style={styles.locationAddress}>
                     Getting location...
                   </ThemedText>
-                </View>
-              ) : locationError ? (
-                <ThemedText style={[styles.locationText, styles.locationError]}>
-                  {locationError}
-                </ThemedText>
-              ) : (
-                <ThemedText style={styles.locationText} numberOfLines={1}>
-                  {locationAddress || "Store Location"}
-                </ThemedText>
-              )}
-            </View>
-            <TouchableOpacity
-              onPress={getCurrentLocation}
-              style={styles.refreshButton}
-            >
-              <IconSymbol
-                name="arrow.clockwise"
-                size={18}
-                color="rgba(255,255,255,0.7)"
-              />
-            </TouchableOpacity>
-          </View>
-
-          {/* Store Location */}
-          {/* Store Location */}
-          <View style={styles.storeLocationContainer}>
-            <View style={styles.storeLocationHeader}>
-              <View style={styles.storeIconContainer}>
-                <IconSymbol name="mappin.and.ellipse" size={24} color="#FFF" />
+                ) : locationError ? (
+                  <ThemedText
+                    style={[styles.locationAddress, { color: "#FF3B30" }]}
+                  >
+                    {locationError}
+                  </ThemedText>
+                ) : (
+                  <ThemedText style={styles.locationAddress} numberOfLines={1}>
+                    {locationAddress || "Store Location"}
+                  </ThemedText>
+                )}
               </View>
-              <View style={{ flex: 1, justifyContent: "center" }}>
-                <ThemedText style={styles.storeLocationLabel}>
-                  PICKUP STORE
+              <TouchableOpacity
+                onPress={getCurrentLocation}
+                style={styles.refreshButton}
+              >
+                <IconSymbol
+                  name="arrow.clockwise"
+                  size={16}
+                  color="rgba(255,255,255,0.6)"
+                />
+              </TouchableOpacity>
+            </View>
+
+            {/* Connector Line */}
+            <View style={styles.locationConnector}>
+              <View style={styles.dottedLine} />
+            </View>
+
+            {/* Store Location Section */}
+            <View style={styles.locationSection}>
+              <View style={[styles.locationIconContainer, styles.storeIconBg]}>
+                <IconSymbol name="storefront.fill" size={20} color="#34C759" />
+              </View>
+              <View style={styles.locationInfo}>
+                <ThemedText style={styles.locationLabel}>
+                  Pickup Store
                 </ThemedText>
-                <ThemedText style={styles.storeNameText} numberOfLines={1}>
+                <ThemedText style={styles.locationAddress}>
                   Vaishnavi Sales
                 </ThemedText>
               </View>
-            </View>
-
-            <View style={styles.storeActionsRow}>
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={handlePhoneCall}
-              >
-                <IconSymbol name="phone.fill" size={16} color="#FFF" />
-                <ThemedText style={styles.actionButtonText}>Call</ThemedText>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.actionButton, styles.primaryActionButton]}
-                onPress={() => {
-                  const url = Platform.select({
-                    ios: `maps:0,0?q=${encodeURIComponent(STORE_LOCATION)}`,
-                    android: `geo:0,0?q=${encodeURIComponent(STORE_LOCATION)}`,
-                  });
-                  Linking.openURL(url || "");
-                }}
-              >
-                <IconSymbol name="map.fill" size={16} color="#FFF" />
-                <ThemedText style={styles.actionButtonText}>
-                  Directions
-                </ThemedText>
-              </TouchableOpacity>
+              <View style={styles.locationActions}>
+                <TouchableOpacity
+                  style={styles.miniActionButton}
+                  onPress={handlePhoneCall}
+                >
+                  <IconSymbol name="phone.fill" size={14} color="#FFF" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.miniActionButton, styles.primaryMiniAction]}
+                  onPress={() => {
+                    const url = Platform.select({
+                      ios: `maps:0,0?q=${encodeURIComponent(STORE_LOCATION)}`,
+                      android: `geo:0,0?q=${encodeURIComponent(
+                        STORE_LOCATION
+                      )}`,
+                    });
+                    Linking.openURL(url || "");
+                  }}
+                >
+                  <IconSymbol name="map.fill" size={14} color="#FFF" />
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
 
@@ -642,13 +656,23 @@ export default function HomeScreen() {
               <View style={styles.modalInputRow}>
                 <View style={{ flex: 1 }}>
                   <ThemedText style={styles.inputLabel}>Date</ThemedText>
-                  <TextInput
+                  <TouchableOpacity
                     style={styles.modalInput}
-                    placeholder="YYYY-MM-DD"
-                    placeholderTextColor="rgba(255,255,255,0.3)"
-                    value={newSaleDate}
-                    onChangeText={setNewSaleDate}
-                  />
+                    onPress={() => setShowDatePicker(true)}
+                  >
+                    <ThemedText style={{ color: "#FFF", fontSize: 16 }}>
+                      {newSaleDate}
+                    </ThemedText>
+                  </TouchableOpacity>
+                  {showDatePicker && (
+                    <DateTimePicker
+                      value={new Date(newSaleDate)}
+                      mode="date"
+                      display="default"
+                      onChange={onDateChange}
+                      maximumDate={new Date()}
+                    />
+                  )}
                 </View>
                 <View style={{ flex: 1, marginLeft: 12 }}>
                   <ThemedText style={styles.inputLabel}>Time</ThemedText>
@@ -766,44 +790,75 @@ const styles = StyleSheet.create({
     padding: 6,
     borderRadius: 8,
   },
-  searchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+  locationCard: {
     backgroundColor: "rgba(255,255,255,0.05)",
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    height: 56,
+    borderRadius: 24,
+    padding: 20,
     marginBottom: 24,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.1)",
   },
-  searchInput: {
-    flex: 1,
-    marginLeft: 12,
-    color: "#FFF",
-    fontSize: 16,
-  },
-  locationTextContainer: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  locationLoadingRow: {
+  locationSection: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
   },
-  locationText: {
+  locationIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(0, 122, 255, 0.15)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  storeIconBg: {
+    backgroundColor: "rgba(52, 199, 89, 0.15)",
+  },
+  locationInfo: {
+    flex: 1,
+  },
+  locationLabel: {
+    fontSize: 12,
+    color: "rgba(255,255,255,0.5)",
+    fontWeight: "600",
+    marginBottom: 2,
+  },
+  locationAddress: {
+    fontSize: 15,
+    fontWeight: "600",
     color: "#FFF",
-    fontSize: 14,
-    opacity: 0.9,
-  },
-  locationError: {
-    opacity: 0.6,
-    fontStyle: "italic",
   },
   refreshButton: {
     padding: 8,
-    marginLeft: 8,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderRadius: 12,
+  },
+  locationConnector: {
+    height: 24,
+    marginLeft: 20,
+    justifyContent: "center",
+  },
+  dottedLine: {
+    width: 2,
+    height: "100%",
+    borderLeftWidth: 2,
+    borderLeftColor: "rgba(255,255,255,0.1)",
+    borderStyle: "dotted",
+  },
+  locationActions: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  miniActionButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  primaryMiniAction: {
+    backgroundColor: "#007AFF",
   },
 
   orderPickupLocation: {
@@ -855,9 +910,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   iconButton: {
-    padding: 8,
-    backgroundColor: "rgba(255,255,255,0.05)",
-    borderRadius: 8,
+    padding: 10,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
   },
   featuredScroll: {
     gap: 16,
@@ -1128,68 +1185,5 @@ const styles = StyleSheet.create({
   },
   confirmButton: {
     backgroundColor: "#FF3B30",
-  },
-  storeLocationContainer: {
-    marginHorizontal: 20,
-    marginBottom: 24,
-    padding: 20,
-    backgroundColor: "#1C1C1E",
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  storeLocationHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  storeIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "#007AFF",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 16,
-  },
-  storeLocationLabel: {
-    fontSize: 12,
-    color: "rgba(255,255,255,0.5)",
-    fontWeight: "600",
-    letterSpacing: 1,
-    marginBottom: 4,
-  },
-  storeNameText: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#FFF",
-  },
-  storeActionsRow: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 16,
-  },
-  actionButton: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.1)",
-    paddingVertical: 12,
-    borderRadius: 12,
-    gap: 8,
-  },
-  primaryActionButton: {
-    backgroundColor: "#007AFF",
-  },
-  actionButtonText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#FFF",
   },
 });
