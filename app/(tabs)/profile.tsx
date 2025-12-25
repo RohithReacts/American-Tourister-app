@@ -2,6 +2,7 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { OrderProgressTracker } from "@/components/ui/OrderProgressTracker";
 import { SuccessModal } from "@/components/ui/SuccessModal";
 import { PRODUCTS } from "@/constants/products";
 import { useAuth } from "@/context/AuthContext";
@@ -41,7 +42,13 @@ interface Order {
   time: string;
   color: string;
   pickupLocation: string;
-  status?: "pending" | "preparing" | "confirmed" | "no_stock";
+  status?:
+    | "pending"
+    | "preparing"
+    | "ready"
+    | "picked_up"
+    | "confirmed"
+    | "no_stock";
 }
 
 const STORE_LOCATION =
@@ -126,7 +133,14 @@ export default function ProfileScreen() {
     setRefreshing(true);
     try {
       const storedOrders = await AsyncStorage.getItem(ORDERS_STORAGE_KEY);
-      if (storedOrders) setOrders(JSON.parse(storedOrders));
+      if (storedOrders) {
+        const allOrders: Order[] = JSON.parse(storedOrders);
+        // Admin sees all orders, Users see only their own
+        const filteredOrders = isAdmin
+          ? allOrders
+          : allOrders.filter((o) => o.userId === user?.id);
+        setOrders(filteredOrders);
+      }
       if (isAdmin) {
         await loadUsers();
       }
@@ -135,7 +149,7 @@ export default function ProfileScreen() {
     } finally {
       setRefreshing(false);
     }
-  }, [isAdmin, getAllUsers]); // Added getAllUsers to deps for completeness, though it's stable from context
+  }, [isAdmin, user?.id]); // Added getAllUsers to deps for completeness, though it's stable from context
 
   useEffect(() => {
     if (isAdmin) {
@@ -399,6 +413,36 @@ export default function ProfileScreen() {
     }
   };
 
+  const handleReadyOrder = async (order: Order) => {
+    try {
+      const updatedOrders = orders.map((o) =>
+        o.id === order.id ? { ...o, status: "ready" as const } : o
+      );
+      setOrders(updatedOrders);
+      await saveOrdersToStorage(updatedOrders);
+      setSuccessMessage("Order marked as Ready for Pickup.");
+      setShowSuccessModal(true);
+    } catch (error) {
+      console.error("Failed to update order status:", error);
+      Alert.alert("Error", "Failed to update order status.");
+    }
+  };
+
+  const handlePickedUpOrder = async (order: Order) => {
+    try {
+      const updatedOrders = orders.map((o) =>
+        o.id === order.id ? { ...o, status: "picked_up" as const } : o
+      );
+      setOrders(updatedOrders);
+      await saveOrdersToStorage(updatedOrders);
+      setSuccessMessage("Order marked as Picked Up.");
+      setShowSuccessModal(true);
+    } catch (error) {
+      console.error("Failed to update order status:", error);
+      Alert.alert("Error", "Failed to update order status.");
+    }
+  };
+
   const handleDownloadOrderInvoice = async () => {
     if (!selectedOrderForBill) return;
 
@@ -567,26 +611,41 @@ export default function ProfileScreen() {
                           </ThemedText>
                         </View>
                       )}
+                      {order.status === "ready" && (
+                        <View style={styles.readyBadge}>
+                          <IconSymbol
+                            name="checkmark.circle.fill"
+                            size={14}
+                            color="#34C759"
+                          />
+                          <ThemedText style={styles.readyBadgeText}>
+                            Ready
+                          </ThemedText>
+                        </View>
+                      )}
+                      {order.status === "picked_up" && (
+                        <View style={styles.pickedUpBadge}>
+                          <IconSymbol
+                            name="bag.fill"
+                            size={14}
+                            color="#34C759"
+                          />
+                          <ThemedText style={styles.pickedUpBadgeText}>
+                            Picked Up
+                          </ThemedText>
+                        </View>
+                      )}
                     </View>
+
+                    {/* Order Progress Tracker */}
+                    <OrderProgressTracker status={order.status} />
 
                     {isAdmin &&
                       order.status !== "confirmed" &&
                       order.status !== "no_stock" && (
                         <View style={styles.orderActions}>
-                          <TouchableOpacity
-                            style={styles.confirmOrderButton}
-                            onPress={() => handleConfirmOrder(order)}
-                          >
-                            <IconSymbol
-                              name="checkmark.circle.fill"
-                              size={16}
-                              color="#FFF"
-                            />
-                            <ThemedText style={styles.confirmOrderText}>
-                              Confirm
-                            </ThemedText>
-                          </TouchableOpacity>
-                          {order.status !== "preparing" && (
+                          {/* Show Preparing button only for pending orders */}
+                          {order.status === "pending" && (
                             <TouchableOpacity
                               style={styles.preparingButton}
                               onPress={() => handlePreparingOrder(order)}
@@ -601,6 +660,59 @@ export default function ProfileScreen() {
                               </ThemedText>
                             </TouchableOpacity>
                           )}
+
+                          {/* Show Ready button only for preparing orders */}
+                          {order.status === "preparing" && (
+                            <TouchableOpacity
+                              style={styles.readyButton}
+                              onPress={() => handleReadyOrder(order)}
+                            >
+                              <IconSymbol
+                                name="checkmark.circle.fill"
+                                size={16}
+                                color="#34C759"
+                              />
+                              <ThemedText style={styles.readyText}>
+                                Ready
+                              </ThemedText>
+                            </TouchableOpacity>
+                          )}
+
+                          {/* Show Picked Up button only for ready orders */}
+                          {order.status === "ready" && (
+                            <TouchableOpacity
+                              style={styles.pickedUpButton}
+                              onPress={() => handlePickedUpOrder(order)}
+                            >
+                              <IconSymbol
+                                name="bag.fill"
+                                size={16}
+                                color="#34C759"
+                              />
+                              <ThemedText style={styles.pickedUpText}>
+                                Picked Up
+                              </ThemedText>
+                            </TouchableOpacity>
+                          )}
+
+                          {/* Show Confirm button only for picked_up orders */}
+                          {order.status === "picked_up" && (
+                            <TouchableOpacity
+                              style={styles.confirmOrderButton}
+                              onPress={() => handleConfirmOrder(order)}
+                            >
+                              <IconSymbol
+                                name="checkmark.circle.fill"
+                                size={16}
+                                color="#FFF"
+                              />
+                              <ThemedText style={styles.confirmOrderText}>
+                                Confirm
+                              </ThemedText>
+                            </TouchableOpacity>
+                          )}
+
+                          {/* No Stock button always available */}
                           <TouchableOpacity
                             style={styles.noStockButton}
                             onPress={() => handleNoStockOrder(order)}
@@ -1892,5 +2004,81 @@ const styles = StyleSheet.create({
   },
   removeText: {
     display: "none",
+  },
+  // Ready Badge and Button Styles
+  readyBadge: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    backgroundColor: "rgba(52, 199, 89, 0.15)",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(52, 199, 89, 0.3)",
+  },
+  readyBadgeText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#34C759",
+  },
+  readyButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    backgroundColor: "rgba(52, 199, 89, 0.15)",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(52, 199, 89, 0.3)",
+  },
+  readyText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#34C759",
+  },
+  // Picked Up Badge and Button Styles
+  pickedUpBadge: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    backgroundColor: "rgba(52, 199, 89, 0.15)",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(52, 199, 89, 0.3)",
+  },
+  pickedUpBadgeText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#34C759",
+  },
+  pickedUpButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    backgroundColor: "rgba(52, 199, 89, 0.15)",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(52, 199, 89, 0.3)",
+  },
+  pickedUpText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#34C759",
   },
 });
