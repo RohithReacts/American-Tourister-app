@@ -93,6 +93,7 @@ export default function CartScreen() {
         time: timeStr,
         status: "pending",
         pickupLocation: STORE_INFO.address,
+        customerName: user?.name || "Guest",
       };
 
       // Load existing orders

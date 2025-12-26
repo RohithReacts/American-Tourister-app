@@ -78,6 +78,10 @@ const MAPPING: IconMapping = {
   "list.bullet.clipboard.fill": "assignment",
   "doc.text.magnifyingglass": "manage-search",
   "indianrupeesign.circle.fill": "currency-rupee",
+  "chart.bar.fill": "assessment",
+  "list.bullet.circle.fill": "format-list-bulleted",
+  "bag.circle.fill": "shopping-bag",
+  "person.2.fill": "people",
 };
 
 /**

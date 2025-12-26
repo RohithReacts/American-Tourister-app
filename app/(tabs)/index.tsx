@@ -1,6 +1,7 @@
 import { ProductCard } from "@/components/ProductCard";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { BannerCarousel } from "@/components/ui/BannerCarousel";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { StatusModal } from "@/components/ui/StatusModal";
 import { PRODUCTS } from "@/constants/products";
@@ -59,6 +60,32 @@ const getCurrentDate = () => {
   const now = new Date();
   return now.toISOString().split("T")[0]; // YYYY-MM-DD
 };
+
+const ORDERS_STORAGE_KEY = "@orders_data";
+
+interface Order {
+  id: string;
+  userId: string;
+  productId: string;
+  productName: string;
+  productImage: any;
+  category: string;
+  count: number;
+  amount: number;
+  mrp: number;
+  size: string;
+  date: string;
+  time: string;
+  color: string;
+  pickupLocation: string;
+  status?:
+    | "pending"
+    | "preparing"
+    | "ready"
+    | "picked_up"
+    | "confirmed"
+    | "no_stock";
+}
 
 const getCurrentTime = () => {
   const now = new Date();
@@ -120,7 +147,7 @@ export default function HomeScreen() {
     } finally {
       setRefreshing(false);
     }
-  }, []);
+  }, [isAdmin, user?.id]);
 
   // New Sale State
   const [selectedProductId, setSelectedProductId] = useState(PRODUCTS[0].id);
@@ -227,7 +254,7 @@ export default function HomeScreen() {
       }
     };
     loadData();
-  }, []);
+  }, [isAdmin, user?.id]);
 
   // Get location on mount
   useEffect(() => {
@@ -334,15 +361,20 @@ export default function HomeScreen() {
         {/* Dashboard Header */}
         <View style={styles.dashboardHeader}>
           <View style={styles.headerTop}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-              <View style={styles.avatarContainer}>
+            <TouchableOpacity
+              onPress={() => router.push("/account-details")}
+              style={styles.avatarContainer}
+            >
+              {user?.avatar ? (
+                <Image
+                  source={{ uri: user.avatar }}
+                  style={styles.userAvatarImage}
+                  contentFit="cover"
+                />
+              ) : (
                 <IconSymbol name="person.fill" size={24} color="#007AFF" />
-              </View>
-              <View>
-                <ThemedText style={styles.welcomeLabel}>Welcome</ThemedText>
-                <ThemedText style={styles.userName}>Traveler</ThemedText>
-              </View>
-            </View>
+              )}
+            </TouchableOpacity>
             <View style={styles.logoContainer}>
               <Image
                 source={require("@/assets/American_Tourister_logo.svg")}
@@ -433,6 +465,8 @@ export default function HomeScreen() {
               </View>
             </View>
           </View>
+
+          <BannerCarousel />
 
           <View style={styles.quickActions}>
             {CATEGORY_DATA.map((category) => (
@@ -805,21 +839,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 32,
+    marginBottom: 24,
   },
 
-  welcomeLabel: {
-    fontSize: 12,
-    opacity: 0.5,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 1,
-  },
-  userName: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#FFF",
-  },
   logo: {
     width: 100,
     height: 30,
@@ -1164,15 +1186,21 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   avatarContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 54,
+    height: 54,
+    borderRadius: 27,
     backgroundColor: "rgba(0, 122, 255, 0.1)",
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(0, 122, 255, 0.2)",
+    borderWidth: 1.5,
+    borderColor: "rgba(0, 122, 255, 0.3)",
+    overflow: "hidden",
   },
+  userAvatarImage: {
+    width: "100%",
+    height: "100%",
+  },
+
   addToListText: {
     color: "#FFF",
     fontWeight: "bold",

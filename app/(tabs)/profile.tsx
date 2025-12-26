@@ -50,6 +50,21 @@ interface Order {
     | "picked_up"
     | "confirmed"
     | "no_stock";
+  customerName: string;
+}
+
+interface Sale {
+  id: string;
+  productId: string;
+  productName: string;
+  productImage: any;
+  category: string;
+  amount: number;
+  size: string;
+  date: string;
+  time: string;
+  color: string;
+  customerName: string;
 }
 
 const STORE_LOCATION =
@@ -65,6 +80,7 @@ const CATEGORY_DATA = [
 ];
 
 const ORDERS_STORAGE_KEY = "@orders_data";
+const SALES_STORAGE_KEY = "@sales_data";
 
 const getCurrentDate = () => {
   const now = new Date();
@@ -99,7 +115,9 @@ export default function ProfileScreen() {
   const { tab } = useLocalSearchParams();
 
   const [showOrders, setShowOrders] = useState(false);
+  const [showSales, setShowSales] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [sales, setSales] = useState<Sale[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isOrderModalVisible, setIsOrderModalVisible] = useState(false);
@@ -150,7 +168,10 @@ export default function ProfileScreen() {
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
     try {
-      const storedOrders = await AsyncStorage.getItem(ORDERS_STORAGE_KEY);
+      const [storedOrders, storedSales] = await Promise.all([
+        AsyncStorage.getItem(ORDERS_STORAGE_KEY),
+        AsyncStorage.getItem(SALES_STORAGE_KEY),
+      ]);
       if (storedOrders) {
         const allOrders: Order[] = JSON.parse(storedOrders);
         // Admin sees all orders, Users see only their own
@@ -158,6 +179,9 @@ export default function ProfileScreen() {
           ? allOrders
           : allOrders.filter((o) => o.userId === user?.id);
         setOrders(filteredOrders);
+      }
+      if (storedSales) {
+        setSales(JSON.parse(storedSales));
       }
       if (isAdmin) {
         await loadUsers();
@@ -234,10 +258,19 @@ export default function ProfileScreen() {
       label: "Wishlist",
       action: () => router.push("/wishlist"),
     },
-    ...(user?.email === "admin@americantourister.com"
+    ...(isAdmin
       ? [
           {
             icon: "lock.shield.fill",
+            label: "Admin Dashboard",
+            action: () => setIsUserListVisible(true),
+          },
+        ]
+      : []),
+    ...(user?.email === "admin@americantourister.com"
+      ? [
+          {
+            icon: "gearshape.fill",
             label: "Admin Mode",
             isToggle: true,
             value: isAdmin,
@@ -245,25 +278,16 @@ export default function ProfileScreen() {
           },
         ]
       : []),
-    ...(isAdmin
-      ? [
-          {
-            icon: "person.2.circle.fill",
-            label: `User Management (${users.length})`,
-            action: () => {
-              console.log("Opening User Management Modal");
-              setIsUserListVisible(true);
-            },
-          },
-        ]
-      : []),
   ];
 
-  // Load orders from AsyncStorage on mount
+  // Load data from AsyncStorage on mount
   useEffect(() => {
-    const loadOrders = async () => {
+    const loadData = async () => {
       try {
-        const storedOrders = await AsyncStorage.getItem(ORDERS_STORAGE_KEY);
+        const [storedOrders, storedSales] = await Promise.all([
+          AsyncStorage.getItem(ORDERS_STORAGE_KEY),
+          AsyncStorage.getItem(SALES_STORAGE_KEY),
+        ]);
         if (storedOrders) {
           const allOrders: Order[] = JSON.parse(storedOrders);
           // Filter orders: Admin sees all, User sees only theirs
@@ -272,11 +296,14 @@ export default function ProfileScreen() {
             : allOrders.filter((o) => o.userId === user?.id);
           setOrders(filteredOrders);
         }
+        if (storedSales) {
+          setSales(JSON.parse(storedSales));
+        }
       } catch (error) {
-        console.error("Failed to load orders", error);
+        console.error("Failed to load data", error);
       }
     };
-    loadOrders();
+    loadData();
   }, [isAdmin, user]);
 
   const saveOrdersToStorage = async (updatedOrders: Order[]) => {
@@ -318,6 +345,8 @@ export default function ProfileScreen() {
       time: newOrderTime,
       color: categoryInfo.color,
       pickupLocation: STORE_LOCATION,
+      customerName: user?.name || "Manual Order",
+      status: "pending",
     };
 
     setPendingOrders([...pendingOrders, newOrder]);
@@ -355,6 +384,30 @@ export default function ProfileScreen() {
     await saveOrdersToStorage([]);
     setIsClearOrdersModalVisible(false);
   };
+
+  const totalSalesAmount = sales.reduce((sum, sale) => sum + sale.amount, 0);
+  const totalOrdersAmount = orders.reduce(
+    (sum, order) => sum + order.amount,
+    0
+  );
+
+  // Product-wise Stats Calculation
+  const productWiseStats = PRODUCTS.map((product) => {
+    const productSales = sales.filter((s) => s.productId === product.id);
+    const productOrders = orders.filter((o) => o.productId === product.id);
+    const totalQtySold = productSales.length;
+    const totalQtyOrdered = productOrders.reduce((sum, o) => sum + o.count, 0);
+    const totalRevenue = productSales.reduce((sum, s) => sum + s.amount, 0);
+
+    return {
+      id: product.id,
+      name: product.name,
+      image: product.image,
+      totalQtySold,
+      totalQtyOrdered,
+      totalRevenue,
+    };
+  }).filter((stat) => stat.totalQtySold > 0 || stat.totalQtyOrdered > 0);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("en-IN", {
@@ -397,6 +450,7 @@ export default function ProfileScreen() {
         date: new Date().toISOString().split("T")[0],
         time: new Date().toTimeString().split(" ")[0].substring(0, 5),
         color: order.color || "#007AFF",
+        customerName: order.customerName,
       };
 
       // 3. Save to sales
@@ -480,7 +534,9 @@ export default function ProfileScreen() {
       await downloadInvoice({
         orderId: selectedOrderForBill.id,
         customerName:
+          selectedOrderForBill.customerName ||
           users.find((u) => u.id === selectedOrderForBill.userId)?.name ||
+          user?.name ||
           "Customer",
         date: new Date(selectedOrderForBill.date).toLocaleDateString("en-IN", {
           day: "numeric",
@@ -1046,9 +1102,12 @@ export default function ProfileScreen() {
                       html: getInvoiceHTMLForDisplay({
                         orderId: selectedOrderForBill.id,
                         customerName:
+                          selectedOrderForBill.customerName ||
                           users.find(
                             (u) => u.id === selectedOrderForBill.userId
-                          )?.name || "Customer",
+                          )?.name ||
+                          user?.name ||
+                          "Customer",
                         date: new Date(
                           selectedOrderForBill.date
                         ).toLocaleDateString("en-IN", {
@@ -1118,6 +1177,260 @@ export default function ProfileScreen() {
           message={statusModalConfig.message}
           onClose={() => setStatusModalVisible(false)}
         />
+      </ThemedView>
+    );
+  }
+
+  if (showSales) {
+    return (
+      <ThemedView style={styles.container}>
+        <View style={styles.ordersHeader}>
+          <TouchableOpacity
+            onPress={() => setShowSales(false)}
+            style={styles.backButton}
+          >
+            <IconSymbol name="chevron.left" size={24} color="#007AFF" />
+          </TouchableOpacity>
+          <ThemedText type="subtitle" style={styles.ordersTitle}>
+            My Sales
+          </ThemedText>
+          <View style={{ width: 40 }} />
+        </View>
+
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#007AFF"
+              colors={["#007AFF"]}
+            />
+          }
+        >
+          <View style={styles.ordersSection}>
+            {/* Stats Section */}
+            <View style={[styles.statsContainer, { paddingHorizontal: 0 }]}>
+              <View style={styles.statCard}>
+                <View
+                  style={[
+                    styles.statIconContainer,
+                    { backgroundColor: "#34C75920" },
+                  ]}
+                >
+                  <IconSymbol
+                    name="indianrupeesign.circle.fill"
+                    size={20}
+                    color="#34C759"
+                  />
+                </View>
+                <View>
+                  <ThemedText style={styles.statLabel}>Total Sales</ThemedText>
+                  <ThemedText style={styles.statValue}>
+                    {formatCurrency(totalSalesAmount)}
+                  </ThemedText>
+                </View>
+              </View>
+              <View style={styles.statCard}>
+                <View
+                  style={[
+                    styles.statIconContainer,
+                    { backgroundColor: "#007AFF20" },
+                  ]}
+                >
+                  <IconSymbol
+                    name="bag.circle.fill"
+                    size={20}
+                    color="#007AFF"
+                  />
+                </View>
+                <View>
+                  <ThemedText style={styles.statLabel}>Total Orders</ThemedText>
+                  <ThemedText style={styles.statValue}>
+                    {formatCurrency(totalOrdersAmount)}
+                  </ThemedText>
+                </View>
+              </View>
+            </View>
+
+            <View
+              style={[
+                styles.statsContainer,
+                { paddingHorizontal: 0, marginTop: -12 },
+              ]}
+            >
+              <View style={styles.statCard}>
+                <View
+                  style={[
+                    styles.statIconContainer,
+                    { backgroundColor: "#FF9F0A20" },
+                  ]}
+                >
+                  <IconSymbol
+                    name="checkmark.circle.fill"
+                    size={20}
+                    color="#FF9F0A"
+                  />
+                </View>
+                <View>
+                  <ThemedText style={styles.statLabel}>Sales Done</ThemedText>
+                  <ThemedText style={styles.statValue}>
+                    {sales.length}
+                  </ThemedText>
+                </View>
+              </View>
+              <View
+                style={[
+                  styles.statCard,
+                  { backgroundColor: "transparent", borderWidth: 0 },
+                ]}
+              />
+            </View>
+
+            {/* Product Performance Section */}
+            <View style={{ marginBottom: 24 }}>
+              <View style={[styles.sectionHeader, { marginBottom: 12 }]}>
+                <View
+                  style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+                >
+                  <IconSymbol name="chart.bar.fill" size={20} color="#007AFF" />
+                  <ThemedText type="subtitle">Product Performance</ThemedText>
+                </View>
+              </View>
+              <View style={{ gap: 12 }}>
+                {productWiseStats.map((stat) => (
+                  <View key={stat.id} style={styles.productStatCard}>
+                    <Image
+                      source={stat.image}
+                      style={styles.productStatImage}
+                      contentFit="contain"
+                    />
+                    <View style={{ flex: 1 }}>
+                      <ThemedText
+                        style={styles.productStatName}
+                        numberOfLines={1}
+                      >
+                        {stat.name}
+                      </ThemedText>
+                      <View
+                        style={{ flexDirection: "row", gap: 12, marginTop: 4 }}
+                      >
+                        <View>
+                          <ThemedText style={styles.productStatLabel}>
+                            Sold
+                          </ThemedText>
+                          <ThemedText style={styles.productStatValue}>
+                            {stat.totalQtySold}
+                          </ThemedText>
+                        </View>
+                        <View>
+                          <ThemedText style={styles.productStatLabel}>
+                            Ordered
+                          </ThemedText>
+                          <ThemedText style={styles.productStatValue}>
+                            {stat.totalQtyOrdered}
+                          </ThemedText>
+                        </View>
+                        <View>
+                          <ThemedText style={styles.productStatLabel}>
+                            Revenue
+                          </ThemedText>
+                          <ThemedText
+                            style={[
+                              styles.productStatValue,
+                              { color: "#34C759" },
+                            ]}
+                          >
+                            {formatCurrency(stat.totalRevenue)}
+                          </ThemedText>
+                        </View>
+                      </View>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </View>
+
+            <View style={[styles.sectionHeader, { marginBottom: 16 }]}>
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+              >
+                <IconSymbol
+                  name="list.bullet.circle.fill"
+                  size={20}
+                  color="#007AFF"
+                />
+                <ThemedText type="subtitle">Recent Sales</ThemedText>
+              </View>
+            </View>
+            {sales.length > 0 ? (
+              <View style={styles.ordersListContainer}>
+                {sales.map((sale) => (
+                  <View key={sale.id} style={styles.orderCard}>
+                    <View style={styles.orderTopRow}>
+                      <View style={styles.orderImageContainer}>
+                        <Image
+                          source={sale.productImage}
+                          style={styles.orderProductImage}
+                          contentFit="contain"
+                        />
+                      </View>
+                      <View style={styles.orderInfo}>
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 6,
+                            marginBottom: 4,
+                          }}
+                        >
+                          <IconSymbol
+                            name="bag.fill"
+                            size={14}
+                            color="rgba(255,255,255,0.6)"
+                          />
+                          <ThemedText style={styles.orderCategory}>
+                            {sale.productName} • {sale.size}
+                          </ThemedText>
+                        </View>
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 6,
+                            marginBottom: 4,
+                          }}
+                        >
+                          <ThemedText style={styles.orderAmount}>
+                            {formatCurrency(sale.amount)}
+                          </ThemedText>
+                        </View>
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 6,
+                            marginTop: 4,
+                          }}
+                        >
+                          <ThemedText style={styles.orderTimestamp}>
+                            {formatDate(sale.date)} • {formatTime(sale.time)}
+                          </ThemedText>
+                        </View>
+                      </View>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.emptyOrders}>
+                <ThemedText style={styles.emptyOrdersText}>
+                  No sales recorded.
+                </ThemedText>
+              </View>
+            )}
+          </View>
+        </ScrollView>
       </ThemedView>
     );
   }
@@ -1228,13 +1541,19 @@ export default function ProfileScreen() {
             <View
               style={{
                 flexDirection: "row",
-                justifyContent: "space-between",
+                justifyContent: "center",
                 alignItems: "center",
-                marginBottom: 20,
+                marginBottom: 24,
+                position: "relative",
               }}
             >
-              <ThemedText type="subtitle">User Management</ThemedText>
-              <TouchableOpacity onPress={() => setIsUserListVisible(false)}>
+              <ThemedText type="subtitle" style={{ textAlign: "center" }}>
+                Admin Dashboard
+              </ThemedText>
+              <TouchableOpacity
+                onPress={() => setIsUserListVisible(false)}
+                style={{ position: "absolute", right: 0 }}
+              >
                 <IconSymbol name="xmark.circle.fill" size={24} color="#666" />
               </TouchableOpacity>
             </View>
@@ -1242,9 +1561,69 @@ export default function ProfileScreen() {
             <View
               style={{
                 flexDirection: "row",
+                gap: 12,
+                marginBottom: 20,
+              }}
+            >
+              <TouchableOpacity
+                style={{
+                  flex: 1,
+                  backgroundColor: "rgba(0, 122, 255, 0.1)",
+                  padding: 16,
+                  borderRadius: 16,
+                  borderWidth: 1,
+                  borderColor: "rgba(0, 122, 255, 0.2)",
+                  alignItems: "center",
+                  gap: 8,
+                }}
+                onPress={() => {
+                  setIsUserListVisible(false);
+                  setShowSales(true);
+                }}
+              >
+                <IconSymbol
+                  name="indianrupeesign.circle.fill"
+                  size={24}
+                  color="#007AFF"
+                />
+                <ThemedText style={{ fontWeight: "bold", fontSize: 14 }}>
+                  Sales
+                </ThemedText>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={{
+                  flex: 1,
+                  backgroundColor: "rgba(52, 199, 89, 0.1)",
+                  padding: 16,
+                  borderRadius: 16,
+                  borderWidth: 1,
+                  borderColor: "rgba(52, 199, 89, 0.2)",
+                  alignItems: "center",
+                  gap: 8,
+                }}
+                onPress={() => {
+                  setIsUserListVisible(false);
+                  setShowOrders(true);
+                }}
+              >
+                <IconSymbol name="bag.fill" size={24} color="#34C759" />
+                <ThemedText style={{ fontWeight: "bold", fontSize: 14 }}>
+                  Orders
+                </ThemedText>
+              </TouchableOpacity>
+            </View>
+
+            <View
+              style={{
+                flexDirection: "row",
                 alignItems: "center",
+                justifyContent: "center",
                 gap: 8,
                 marginBottom: 16,
+                paddingTop: 16,
+                borderTopWidth: 1,
+                borderTopColor: "rgba(255,255,255,0.05)",
               }}
             >
               <IconSymbol
@@ -1252,8 +1631,8 @@ export default function ProfileScreen() {
                 size={18}
                 color="rgba(255,255,255,0.6)"
               />
-              <ThemedText style={{ opacity: 0.6 }}>
-                Total Registered Users: {users.length}
+              <ThemedText style={{ opacity: 0.6, fontWeight: "600" }}>
+                User Management ({users.length})
               </ThemedText>
             </View>
 
@@ -1563,14 +1942,18 @@ const styles = StyleSheet.create({
   orderImageContainer: {
     width: 120,
     height: 120,
-    borderRadius: 12,
+    borderRadius: 24,
     backgroundColor: "#FFF",
-    padding: 6,
+    padding: 12,
     marginBottom: 12,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
   },
   orderProductImage: {
     width: "100%",
     height: "100%",
+    borderRadius: 12,
   },
   orderInfo: {
     justifyContent: "center",
@@ -2228,5 +2611,72 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 59, 48, 0.1)",
     justifyContent: "center",
     alignItems: "center",
+  },
+  statsContainer: {
+    flexDirection: "row",
+    gap: 12,
+    paddingHorizontal: 24,
+    marginBottom: 24,
+  },
+  statCard: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.05)",
+    padding: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+    gap: 12,
+  },
+  statIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  statLabel: {
+    fontSize: 10,
+    color: "rgba(255,255,255,0.5)",
+    fontWeight: "600",
+    textTransform: "uppercase",
+  },
+  statValue: {
+    fontSize: 15,
+    fontWeight: "bold",
+    color: "#FFF",
+  },
+  productStatCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.03)",
+    padding: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.05)",
+    gap: 12,
+  },
+  productStatImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 8,
+    backgroundColor: "rgba(255,255,255,0.05)",
+  },
+  productStatName: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#FFF",
+  },
+  productStatLabel: {
+    fontSize: 9,
+    color: "rgba(255,255,255,0.4)",
+    fontWeight: "600",
+    textTransform: "uppercase",
+  },
+  productStatValue: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#FFF",
   },
 });
