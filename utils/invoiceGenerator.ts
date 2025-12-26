@@ -5,6 +5,7 @@ import { Alert, Platform } from "react-native";
 
 export interface InvoiceData {
   orderId: string;
+  customerName: string;
   date: string;
   items: Array<{
     name: string;
@@ -33,7 +34,9 @@ const getInvoiceHTML = (data: InvoiceData): string => {
           .store-name { font-size: 32px; font-weight: bold; color: #007AFF; margin-bottom: 8px; letter-spacing: 1px; }
           .store-info { font-size: 15px; color: #555; margin-bottom: 4px; }
           .invoice-title { font-size: 28px; font-weight: bold; margin-top: 25px; text-transform: uppercase; letter-spacing: 2px; color: #333; }
-          .order-meta { margin-bottom: 40px; display: flex; justify-content: space-between; font-size: 15px; background: #f8f9fa; padding: 15px; borderRadius: 8px; }
+          .order-meta { margin-bottom: 40px; display: flex; flex-direction: column; gap: 12px; font-size: 16px; background: #f8f9fa; padding: 20px; border-radius: 12px; border: 1px solid #eee; }
+          .order-meta div { display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding-bottom: 8px; }
+          .order-meta div:last-child { border-bottom: none; padding-bottom: 0; }
           table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
           th { text-align: left; border-bottom: 2px solid #eee; padding: 15px 10px; color: #666; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
           td { padding: 20px 10px; border-bottom: 1px solid #f1f1f1; }
@@ -62,6 +65,7 @@ const getInvoiceHTML = (data: InvoiceData): string => {
         </div>
 
         <div class="order-meta">
+          <div><strong>Customer:</strong> ${data.customerName}</div>
           <div><strong>Order ID:</strong> #${data.orderId}</div>
           <div><strong>Date:</strong> ${data.date}</div>
         </div>

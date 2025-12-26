@@ -1,14 +1,13 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { SuccessModal } from "@/components/ui/SuccessModal";
+import { StatusModal } from "@/components/ui/StatusModal";
 import { useAuth } from "@/context/AuthContext";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -25,11 +24,27 @@ export default function SignupScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  // Status Modal State
+  const [statusModalVisible, setStatusModalVisible] = useState(false);
+  const [statusModalConfig, setStatusModalConfig] = useState<{
+    type: "success" | "error" | "info";
+    title: string;
+    message: string;
+  }>({ type: "info", title: "", message: "" });
+
+  const showStatus = (
+    type: "success" | "error" | "info",
+    title: string,
+    message: string
+  ) => {
+    setStatusModalConfig({ type, title, message });
+    setStatusModalVisible(true);
+  };
 
   const handleSignup = async () => {
     if (!name || !email || !password) {
-      Alert.alert("Error", "Please fill in all fields");
+      showStatus("error", "Error", "Please fill in all fields");
       return;
     }
 
@@ -38,9 +53,17 @@ export default function SignupScreen() {
     setIsLoading(false);
 
     if (result.success) {
-      setShowSuccessModal(true);
+      showStatus(
+        "success",
+        "Success",
+        "Your account has been created successfully. Welcome to the family!"
+      );
     } else {
-      Alert.alert("Signup Failed", result.message);
+      showStatus(
+        "error",
+        "Signup Failed",
+        result.message || "An unknown error occurred"
+      );
     }
   };
 
@@ -126,14 +149,20 @@ export default function SignupScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      <SuccessModal
-        visible={showSuccessModal}
-        message="Your account has been created successfully. Welcome to the family!"
+      <StatusModal
+        visible={statusModalVisible}
+        type={statusModalConfig.type}
+        title={statusModalConfig.title}
+        message={statusModalConfig.message}
         onClose={() => {
-          setShowSuccessModal(false);
-          router.replace("/(tabs)");
+          setStatusModalVisible(false);
+          if (statusModalConfig.type === "success") {
+            router.replace("/(tabs)");
+          }
         }}
-        buttonText="Get Started"
+        buttonText={
+          statusModalConfig.type === "success" ? "Get Started" : "Continue"
+        }
       />
     </ThemedView>
   );

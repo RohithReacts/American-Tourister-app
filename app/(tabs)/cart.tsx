@@ -238,7 +238,7 @@ export default function CartScreen() {
               <DateTimePicker
                 value={scheduledDate}
                 mode="date"
-                display="default"
+                display="spinner"
                 onChange={onDateChange}
                 minimumDate={new Date()}
               />
@@ -248,7 +248,7 @@ export default function CartScreen() {
               <DateTimePicker
                 value={scheduledTime}
                 mode="time"
-                display="default"
+                display="spinner"
                 onChange={onTimeChange}
               />
             )}

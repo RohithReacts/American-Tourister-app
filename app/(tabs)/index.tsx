@@ -2,6 +2,7 @@ import { ProductCard } from "@/components/ProductCard";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { StatusModal } from "@/components/ui/StatusModal";
 import { PRODUCTS } from "@/constants/products";
 import { useAuth } from "@/context/AuthContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -11,7 +12,6 @@ import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  Alert,
   Dimensions,
   Linking,
   Modal,
@@ -91,6 +91,23 @@ export default function HomeScreen() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isClearModalVisible, setIsClearModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Status Modal State
+  const [statusModalVisible, setStatusModalVisible] = useState(false);
+  const [statusModalConfig, setStatusModalConfig] = useState<{
+    type: "success" | "error" | "info";
+    title: string;
+    message: string;
+  }>({ type: "info", title: "", message: "" });
+
+  const showStatus = (
+    type: "success" | "error" | "info",
+    title: string,
+    message: string
+  ) => {
+    setStatusModalConfig({ type, title, message });
+    setStatusModalVisible(true);
+  };
 
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
@@ -191,7 +208,7 @@ export default function HomeScreen() {
     if (canOpen) {
       await Linking.openURL(phoneUrl);
     } else {
-      Alert.alert("Error", "Unable to make phone call");
+      showStatus("error", "Error", "Unable to make phone call");
     }
   };
 
@@ -266,7 +283,11 @@ export default function HomeScreen() {
 
   const handleSaveAllSales = async () => {
     if (pendingSales.length === 0) {
-      Alert.alert("Empty List", "Please add at least one product to the list.");
+      showStatus(
+        "info",
+        "Empty List",
+        "Please add at least one product to the list."
+      );
       return;
     }
     const updatedSales = [...pendingSales, ...sales];
@@ -313,10 +334,14 @@ export default function HomeScreen() {
         {/* Dashboard Header */}
         <View style={styles.dashboardHeader}>
           <View style={styles.headerTop}>
-            <View>
-              <ThemedText type="title" style={styles.userName}>
-                {user?.name?.split(" ")[0] || "Traveler"}
-              </ThemedText>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+              <View style={styles.avatarContainer}>
+                <IconSymbol name="person.fill" size={24} color="#007AFF" />
+              </View>
+              <View>
+                <ThemedText style={styles.welcomeLabel}>Welcome</ThemedText>
+                <ThemedText style={styles.userName}>Traveler</ThemedText>
+              </View>
             </View>
             <View style={styles.logoContainer}>
               <Image
@@ -444,20 +469,21 @@ export default function HomeScreen() {
               <View style={styles.headerActions}>
                 <TouchableOpacity
                   onPress={() => setIsModalVisible(true)}
-                  style={styles.iconButton}
+                  style={styles.salesAddButton}
                 >
                   <IconSymbol
                     name="plus.circle.fill"
                     size={20}
                     color="#007AFF"
                   />
+                  <ThemedText style={styles.salesAddButtonText}>Add</ThemedText>
                 </TouchableOpacity>
                 {sales.length > 0 && (
                   <TouchableOpacity
                     onPress={() => setIsClearModalVisible(true)}
-                    style={[styles.iconButton, { marginLeft: 12 }]}
+                    style={styles.salesClearButton}
                   >
-                    <IconSymbol name="trash.fill" size={20} color="#FF3B30" />
+                    <IconSymbol name="trash.fill" size={18} color="#FF3B30" />
                   </TouchableOpacity>
                 )}
               </View>
@@ -611,10 +637,10 @@ export default function HomeScreen() {
                   </View>
                 </View>
                 <TouchableOpacity
-                  style={styles.addToListButton}
+                  style={styles.modalAddToListButton}
                   onPress={handleAddToPendingSale}
                 >
-                  <IconSymbol name="plus" size={20} color="#FFF" />
+                  <IconSymbol name="plus" size={18} color="#FFF" />
                   <ThemedText style={styles.addToListText}>
                     Add to List
                   </ThemedText>
@@ -641,10 +667,11 @@ export default function HomeScreen() {
                       </View>
                       <TouchableOpacity
                         onPress={() => handleRemovePendingSale(item.id)}
+                        style={styles.pendingDeleteButton}
                       >
                         <IconSymbol
                           name="trash.fill"
-                          size={18}
+                          size={14}
                           color="#FF3B30"
                         />
                       </TouchableOpacity>
@@ -668,7 +695,7 @@ export default function HomeScreen() {
                     <DateTimePicker
                       value={new Date(newSaleDate)}
                       mode="date"
-                      display="default"
+                      display="spinner"
                       onChange={onDateChange}
                       maximumDate={new Date()}
                     />
@@ -689,7 +716,7 @@ export default function HomeScreen() {
 
             <View style={styles.modalButtons}>
               <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
+                style={[styles.modalButton, styles.modalCancelButton]}
                 onPress={() => {
                   setIsModalVisible(false);
                   setPendingSales([]);
@@ -698,11 +725,7 @@ export default function HomeScreen() {
                 <ThemedText style={styles.buttonText}>Cancel</ThemedText>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[
-                  styles.modalButton,
-                  styles.addButton,
-                  { backgroundColor: "#34C759" },
-                ]}
+                style={[styles.modalButton, styles.modalSaveAllButton]}
                 onPress={handleSaveAllSales}
               >
                 <ThemedText style={styles.buttonText}>Save All</ThemedText>
@@ -740,7 +763,7 @@ export default function HomeScreen() {
 
             <View style={styles.modalButtons}>
               <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
+                style={[styles.modalButton, styles.modalCancelButton]}
                 onPress={() => setIsClearModalVisible(false)}
               >
                 <ThemedText style={styles.buttonText}>Cancel</ThemedText>
@@ -755,6 +778,14 @@ export default function HomeScreen() {
           </View>
         </View>
       </Modal>
+
+      <StatusModal
+        visible={statusModalVisible}
+        type={statusModalConfig.type}
+        title={statusModalConfig.title}
+        message={statusModalConfig.message}
+        onClose={() => setStatusModalVisible(false)}
+      />
     </ThemedView>
   );
 }
@@ -764,8 +795,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   dashboardHeader: {
-    padding: 24,
-    paddingTop: 60,
+    padding: 28,
+    paddingTop: 64,
     backgroundColor: "#1A1A1A",
     borderBottomLeftRadius: 32,
     borderBottomRightRadius: 32,
@@ -773,13 +804,21 @@ const styles = StyleSheet.create({
   headerTop: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 24,
+    alignItems: "center",
+    marginBottom: 32,
   },
 
+  welcomeLabel: {
+    fontSize: 12,
+    opacity: 0.5,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
   userName: {
-    fontSize: 28,
+    fontSize: 20,
     fontWeight: "bold",
+    color: "#FFF",
   },
   logo: {
     width: 100,
@@ -908,6 +947,30 @@ const styles = StyleSheet.create({
   headerActions: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 12,
+  },
+  salesAddButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 122, 255, 0.1)",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(0, 122, 255, 0.2)",
+    gap: 6,
+  },
+  salesAddButtonText: {
+    color: "#007AFF",
+    fontSize: 13,
+    fontWeight: "bold",
+  },
+  salesClearButton: {
+    padding: 10,
+    backgroundColor: "rgba(255, 59, 48, 0.1)",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255, 59, 48, 0.2)",
   },
   iconButton: {
     padding: 10,
@@ -1086,7 +1149,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#34C759",
   },
-  addToListButton: {
+  modalAddToListButton: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#007AFF",
@@ -1094,6 +1157,21 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginLeft: 12,
     height: 56,
+    shadowColor: "#007AFF",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  avatarContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "rgba(0, 122, 255, 0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(0, 122, 255, 0.2)",
   },
   addToListText: {
     color: "#FFF",
@@ -1122,6 +1200,14 @@ const styles = StyleSheet.create({
   pendingItemName: {
     fontSize: 14,
     fontWeight: "bold",
+  },
+  pendingDeleteButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "rgba(255, 59, 48, 0.1)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   pendingItemPrice: {
     fontSize: 12,
@@ -1154,15 +1240,23 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  cancelButton: {
-    backgroundColor: "rgba(255,255,255,0.1)",
+  modalCancelButton: {
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
   },
-  addButton: {
-    backgroundColor: "#007AFF",
+  modalSaveAllButton: {
+    backgroundColor: "#34C759",
+    shadowColor: "#34C759",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   buttonText: {
     fontWeight: "bold",
     fontSize: 16,
+    color: "#FFF",
   },
   clearModalContent: {
     alignItems: "center",

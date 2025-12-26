@@ -1,7 +1,7 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { SuccessModal } from "@/components/ui/SuccessModal";
+import { StatusModal } from "@/components/ui/StatusModal";
 import { useAuth } from "@/context/AuthContext";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
@@ -9,7 +9,6 @@ import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -31,7 +30,23 @@ export default function AccountDetailsScreen() {
   const [email, setEmail] = useState(user?.email || "");
   const [avatar, setAvatar] = useState(user?.avatar || DEFAULT_AVATAR);
   const [isSaving, setIsSaving] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  // Status Modal State
+  const [statusModalVisible, setStatusModalVisible] = useState(false);
+  const [statusModalConfig, setStatusModalConfig] = useState<{
+    type: "success" | "error" | "info";
+    title: string;
+    message: string;
+  }>({ type: "info", title: "", message: "" });
+
+  const showStatus = (
+    type: "success" | "error" | "info",
+    title: string,
+    message: string
+  ) => {
+    setStatusModalConfig({ type, title, message });
+    setStatusModalVisible(true);
+  };
 
   const [memberSince, setMemberSince] = useState("");
 
@@ -67,7 +82,7 @@ export default function AccountDetailsScreen() {
 
   const handleSave = async () => {
     if (!name || !email) {
-      Alert.alert("Error", "Name and Email cannot be empty");
+      showStatus("error", "Error", "Name and Email cannot be empty");
       return;
     }
 
@@ -83,11 +98,11 @@ export default function AccountDetailsScreen() {
         if (!isNaN(date.getTime())) {
           createdAt = date.getTime();
         } else {
-          Alert.alert("Error", "Invalid date format. Use DD-MM-YYYY");
+          showStatus("error", "Error", "Invalid date format. Use DD-MM-YYYY");
           return;
         }
       } else {
-        Alert.alert("Error", "Invalid date format. Use DD-MM-YYYY");
+        showStatus("error", "Error", "Invalid date format. Use DD-MM-YYYY");
         return;
       }
     }
@@ -98,9 +113,17 @@ export default function AccountDetailsScreen() {
 
     if (result.success) {
       setIsEditing(false);
-      setShowSuccessModal(true);
+      showStatus(
+        "success",
+        "Success",
+        "Your profile has been updated successfully."
+      );
     } else {
-      Alert.alert("Error", result.message || "Failed to update profile");
+      showStatus(
+        "error",
+        "Error",
+        result.message || "Failed to update profile"
+      );
     }
   };
 
@@ -274,11 +297,12 @@ export default function AccountDetailsScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      <SuccessModal
-        visible={showSuccessModal}
-        message="Your profile has been updated successfully."
-        onClose={() => setShowSuccessModal(false)}
-        buttonText="OK"
+      <StatusModal
+        visible={statusModalVisible}
+        type={statusModalConfig.type}
+        title={statusModalConfig.title}
+        message={statusModalConfig.message}
+        onClose={() => setStatusModalVisible(false)}
       />
     </ThemedView>
   );

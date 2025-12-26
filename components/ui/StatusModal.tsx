@@ -3,19 +3,39 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import React from "react";
 import { Modal, StyleSheet, TouchableOpacity, View } from "react-native";
 
-interface SuccessModalProps {
+interface StatusModalProps {
   visible: boolean;
+  type: "success" | "error" | "info";
+  title?: string;
   message: string;
   onClose: () => void;
   buttonText?: string;
 }
 
-export function SuccessModal({
+export function StatusModal({
   visible,
+  type,
+  title,
   message,
   onClose,
   buttonText = "Continue",
-}: SuccessModalProps) {
+}: StatusModalProps) {
+  const getIcon = () => {
+    switch (type) {
+      case "success":
+        return { name: "checkmark.circle.fill", color: "#34C759" };
+      case "error":
+        return { name: "exclamationmark.circle.fill", color: "#FF3B30" };
+      case "info":
+        return { name: "info.circle.fill", color: "#007AFF" };
+      default:
+        return { name: "info.circle.fill", color: "#007AFF" };
+    }
+  };
+
+  const icon = getIcon();
+  const defaultTitle = type.charAt(0).toUpperCase() + type.slice(1);
+
   return (
     <Modal
       visible={visible}
@@ -26,17 +46,16 @@ export function SuccessModal({
       <View style={styles.overlay}>
         <View style={styles.content}>
           <View style={styles.iconContainer}>
-            <IconSymbol
-              name="checkmark.circle.fill"
-              size={64}
-              color="#34C759"
-            />
+            <IconSymbol name={icon.name as any} size={64} color={icon.color} />
           </View>
           <ThemedText type="subtitle" style={styles.title}>
-            Success!
+            {title || defaultTitle}
           </ThemedText>
           <ThemedText style={styles.message}>{message}</ThemedText>
-          <TouchableOpacity style={styles.button} onPress={onClose}>
+          <TouchableOpacity
+            style={[styles.button, { backgroundColor: icon.color }]}
+            onPress={onClose}
+          >
             <ThemedText style={styles.buttonText}>{buttonText}</ThemedText>
           </TouchableOpacity>
         </View>
@@ -85,13 +104,12 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   button: {
-    backgroundColor: "#34C759",
     paddingVertical: 16,
     paddingHorizontal: 32,
     borderRadius: 16,
     width: "100%",
     alignItems: "center",
-    shadowColor: "#34C759",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,

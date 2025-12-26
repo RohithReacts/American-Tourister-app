@@ -2,9 +2,10 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { OrderActionModal } from "@/components/ui/OrderActionModal";
 import { OrderProgressTracker } from "@/components/ui/OrderProgressTracker";
 import { OrderStatusBadge } from "@/components/ui/OrderStatusBadge";
-import { SuccessModal } from "@/components/ui/SuccessModal";
+import { StatusModal } from "@/components/ui/StatusModal";
 import { PRODUCTS } from "@/constants/products";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -16,7 +17,6 @@ import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  Alert,
   Modal,
   RefreshControl,
   ScrollView,
@@ -109,8 +109,25 @@ export default function ProfileScreen() {
     useState<Order | null>(null);
   const [isInvoiceModalVisible, setIsInvoiceModalVisible] = useState(false);
   const [isUserListVisible, setIsUserListVisible] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
+  const [isOrderActionModalVisible, setIsOrderActionModalVisible] =
+    useState(false);
+
+  // Status Modal State
+  const [statusModalVisible, setStatusModalVisible] = useState(false);
+  const [statusModalConfig, setStatusModalConfig] = useState<{
+    type: "success" | "error" | "info";
+    title: string;
+    message: string;
+  }>({ type: "info", title: "", message: "" });
+
+  const showStatus = (
+    type: "success" | "error" | "info",
+    title: string,
+    message: string
+  ) => {
+    setStatusModalConfig({ type, title, message });
+    setStatusModalVisible(true);
+  };
   const [deleteConfirmationVisible, setDeleteConfirmationVisible] =
     useState(false);
   const [userToDelete, setUserToDelete] = useState<{
@@ -171,10 +188,13 @@ export default function ProfileScreen() {
 
     if (result.success) {
       loadUsers();
-      setSuccessMessage(`User ${userToDelete.name} has been removed.`);
-      setShowSuccessModal(true);
+      showStatus(
+        "success",
+        "Success",
+        `User ${userToDelete.name} has been removed.`
+      );
     } else {
-      Alert.alert("Error", result.message || "Failed to delete user");
+      showStatus("error", "Error", result.message || "Failed to delete user");
     }
     setUserToDelete(null);
   };
@@ -273,7 +293,7 @@ export default function ProfileScreen() {
   const handleAddToPendingOrder = () => {
     const count = parseInt(newOrderCount);
     if (isNaN(count) || count <= 0) {
-      Alert.alert("Invalid Input", "Please enter a valid order count.");
+      showStatus("error", "Invalid Input", "Please enter a valid order count.");
       return;
     }
     const product = PRODUCTS.find((p) => p.id === selectedOrderProductId)!;
@@ -310,7 +330,11 @@ export default function ProfileScreen() {
 
   const handleSaveAllOrders = async () => {
     if (pendingOrders.length === 0) {
-      Alert.alert("Empty List", "Please add at least one product to the list.");
+      showStatus(
+        "info",
+        "Empty List",
+        "Please add at least one product to the list."
+      );
       return;
     }
     const updatedOrders = [...pendingOrders, ...orders];
@@ -342,7 +366,17 @@ export default function ProfileScreen() {
 
   const handleOrderClick = (order: Order) => {
     setSelectedOrderForBill(order);
+    setIsOrderActionModalVisible(true);
+  };
+
+  const handleViewBill = () => {
+    setIsOrderActionModalVisible(false);
     setIsInvoiceModalVisible(true);
+  };
+
+  const handleDownloadBill = async () => {
+    setIsOrderActionModalVisible(false);
+    await handleDownloadOrderInvoice();
   };
 
   const handleConfirmOrder = async (order: Order) => {
@@ -376,11 +410,10 @@ export default function ProfileScreen() {
       setOrders(updatedOrders);
       await saveOrdersToStorage(updatedOrders);
 
-      setSuccessMessage("Order confirmed and added to sales!");
-      setShowSuccessModal(true);
+      showStatus("success", "Success", "Order confirmed and added to sales!");
     } catch (error) {
       console.error("Failed to confirm order:", error);
-      Alert.alert("Error", "Failed to confirm order.");
+      showStatus("error", "Error", "Failed to confirm order.");
     }
   };
 
@@ -391,11 +424,10 @@ export default function ProfileScreen() {
       );
       setOrders(updatedOrders);
       await saveOrdersToStorage(updatedOrders);
-      setSuccessMessage("Order marked as No Stock.");
-      setShowSuccessModal(true);
+      showStatus("success", "Success", "Order marked as No Stock.");
     } catch (error) {
       console.error("Failed to update order status:", error);
-      Alert.alert("Error", "Failed to update order status.");
+      showStatus("error", "Error", "Failed to update order status.");
     }
   };
 
@@ -406,11 +438,10 @@ export default function ProfileScreen() {
       );
       setOrders(updatedOrders);
       await saveOrdersToStorage(updatedOrders);
-      setSuccessMessage("Order marked as Preparing.");
-      setShowSuccessModal(true);
+      showStatus("success", "Success", "Order marked as Preparing.");
     } catch (error) {
       console.error("Failed to update order status:", error);
-      Alert.alert("Error", "Failed to update order status.");
+      showStatus("error", "Error", "Failed to update order status.");
     }
   };
 
@@ -421,11 +452,10 @@ export default function ProfileScreen() {
       );
       setOrders(updatedOrders);
       await saveOrdersToStorage(updatedOrders);
-      setSuccessMessage("Order marked as Ready for Pickup.");
-      setShowSuccessModal(true);
+      showStatus("success", "Success", "Order marked as Ready for Pickup.");
     } catch (error) {
       console.error("Failed to update order status:", error);
-      Alert.alert("Error", "Failed to update order status.");
+      showStatus("error", "Error", "Failed to update order status.");
     }
   };
 
@@ -436,11 +466,10 @@ export default function ProfileScreen() {
       );
       setOrders(updatedOrders);
       await saveOrdersToStorage(updatedOrders);
-      setSuccessMessage("Order marked as Picked Up.");
-      setShowSuccessModal(true);
+      showStatus("success", "Success", "Order marked as Picked Up.");
     } catch (error) {
       console.error("Failed to update order status:", error);
-      Alert.alert("Error", "Failed to update order status.");
+      showStatus("error", "Error", "Failed to update order status.");
     }
   };
 
@@ -450,6 +479,9 @@ export default function ProfileScreen() {
     try {
       await downloadInvoice({
         orderId: selectedOrderForBill.id,
+        customerName:
+          users.find((u) => u.id === selectedOrderForBill.userId)?.name ||
+          "Customer",
         date: new Date(selectedOrderForBill.date).toLocaleDateString("en-IN", {
           day: "numeric",
           month: "long",
@@ -521,24 +553,32 @@ export default function ProfileScreen() {
         >
           <View style={styles.ordersSection}>
             <View style={styles.sectionHeader}>
-              <ThemedText type="subtitle">Orders</ThemedText>
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+              >
+                <IconSymbol
+                  name="list.bullet.clipboard.fill"
+                  size={20}
+                  color="#007AFF"
+                />
+                <ThemedText type="subtitle">Orders</ThemedText>
+              </View>
               <View style={styles.headerActions}>
                 <TouchableOpacity
                   onPress={() => setIsOrderModalVisible(true)}
-                  style={styles.iconButton}
+                  style={styles.ordersAddButton}
                 >
-                  <IconSymbol
-                    name="plus.circle.fill"
-                    size={20}
-                    color="#34C759"
-                  />
+                  <IconSymbol name="plus" size={16} color="#007AFF" />
+                  <ThemedText style={{ color: "#007AFF", fontWeight: "bold" }}>
+                    Add
+                  </ThemedText>
                 </TouchableOpacity>
                 {orders.length > 0 && (
                   <TouchableOpacity
                     onPress={() => setIsClearOrdersModalVisible(true)}
-                    style={[styles.iconButton, { marginLeft: 12 }]}
+                    style={styles.ordersClearButton}
                   >
-                    <IconSymbol name="trash.fill" size={20} color="#FF3B30" />
+                    <IconSymbol name="trash.fill" size={18} color="#FF3B30" />
                   </TouchableOpacity>
                 )}
               </View>
@@ -560,18 +600,51 @@ export default function ProfileScreen() {
                         />
                       </View>
                       <View style={styles.orderInfo}>
-                        <ThemedText style={styles.orderCategory}>
-                          {order.productName} • {order.size}
-                        </ThemedText>
-                        <ThemedText style={styles.orderAmount}>
-                          {order.count} Orders • {formatCurrency(order.amount)}
-                        </ThemedText>
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 6,
+                            marginBottom: 4,
+                          }}
+                        >
+                          <IconSymbol
+                            name="bag.fill"
+                            size={14}
+                            color="rgba(255,255,255,0.6)"
+                          />
+                          <ThemedText style={styles.orderCategory}>
+                            {order.productName} • {order.size}
+                          </ThemedText>
+                        </View>
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 6,
+                            marginBottom: 4,
+                          }}
+                        >
+                          <ThemedText style={styles.orderAmount}>
+                            {order.count} Orders •{" "}
+                            {formatCurrency(order.amount)}
+                          </ThemedText>
+                        </View>
                         <ThemedText style={styles.orderPickupLocation}>
                           📍 Pickup: Vaishnavi Sales
                         </ThemedText>
-                        <ThemedText style={styles.orderTimestamp}>
-                          {formatDate(order.date)} • {formatTime(order.time)}
-                        </ThemedText>
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 6,
+                            marginTop: 4,
+                          }}
+                        >
+                          <ThemedText style={styles.orderTimestamp}>
+                            {formatDate(order.date)} • {formatTime(order.time)}
+                          </ThemedText>
+                        </View>
                       </View>
                     </View>
 
@@ -589,7 +662,7 @@ export default function ProfileScreen() {
                               onPress={() => handlePreparingOrder(order)}
                             >
                               <IconSymbol
-                                name="clock.fill"
+                                name="gearshape.fill"
                                 size={16}
                                 color="#FF9F0A"
                               />
@@ -606,7 +679,7 @@ export default function ProfileScreen() {
                               onPress={() => handleReadyOrder(order)}
                             >
                               <IconSymbol
-                                name="checkmark.circle.fill"
+                                name="checkmark.seal.fill"
                                 size={16}
                                 color="#34C759"
                               />
@@ -623,7 +696,7 @@ export default function ProfileScreen() {
                               onPress={() => handlePickedUpOrder(order)}
                             >
                               <IconSymbol
-                                name="bag.fill"
+                                name="hand.thumbsup.fill"
                                 size={16}
                                 color="#34C759"
                               />
@@ -640,7 +713,7 @@ export default function ProfileScreen() {
                               onPress={() => handleConfirmOrder(order)}
                             >
                               <IconSymbol
-                                name="checkmark.circle.fill"
+                                name="checkmark.shield.fill"
                                 size={16}
                                 color="#FFF"
                               />
@@ -792,10 +865,7 @@ export default function ProfileScreen() {
                 </View>
 
                 <TouchableOpacity
-                  style={[
-                    styles.addToListButton,
-                    { alignSelf: "center", width: "100%", marginBottom: 24 },
-                  ]}
+                  style={styles.modalAddToListButton}
                   onPress={handleAddToPendingOrder}
                 >
                   <IconSymbol name="plus" size={20} color="#FFF" />
@@ -806,9 +876,25 @@ export default function ProfileScreen() {
 
                 {pendingOrders.length > 0 && (
                   <View style={styles.pendingSection}>
-                    <ThemedText style={styles.inputLabel}>
-                      Pending Items ({pendingOrders.length})
-                    </ThemedText>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 8,
+                        marginBottom: 12,
+                      }}
+                    >
+                      <IconSymbol
+                        name="clock.fill"
+                        size={16}
+                        color="rgba(255,255,255,0.6)"
+                      />
+                      <ThemedText
+                        style={[styles.inputLabel, { marginBottom: 0 }]}
+                      >
+                        Pending Items ({pendingOrders.length})
+                      </ThemedText>
+                    </View>
                     {pendingOrders.map((item) => (
                       <View key={item.id} style={styles.pendingItem}>
                         <View style={styles.pendingItemInfo}>
@@ -824,10 +910,11 @@ export default function ProfileScreen() {
                         </View>
                         <TouchableOpacity
                           onPress={() => handleRemovePendingOrder(item.id)}
+                          style={styles.pendingDeleteButton}
                         >
                           <IconSymbol
                             name="trash.fill"
-                            size={18}
+                            size={14}
                             color="#FF3B30"
                           />
                         </TouchableOpacity>
@@ -862,7 +949,7 @@ export default function ProfileScreen() {
 
               <View style={styles.modalButtons}>
                 <TouchableOpacity
-                  style={[styles.modalButton, styles.cancelButton]}
+                  style={[styles.modalButton, styles.modalCancelButton]}
                   onPress={() => {
                     setIsOrderModalVisible(false);
                     setPendingOrders([]);
@@ -871,11 +958,7 @@ export default function ProfileScreen() {
                   <ThemedText style={styles.buttonText}>Cancel</ThemedText>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[
-                    styles.modalButton,
-                    styles.addButton,
-                    { backgroundColor: "#34C759" },
-                  ]}
+                  style={[styles.modalButton, styles.modalSaveAllButton]}
                   onPress={handleSaveAllOrders}
                 >
                   <ThemedText style={styles.buttonText}>Save All</ThemedText>
@@ -939,9 +1022,14 @@ export default function ProfileScreen() {
           <View style={styles.invoiceModalOverlay}>
             <View style={styles.invoiceModalContent}>
               <View style={styles.invoiceModalHeader}>
-                <ThemedText type="subtitle" style={styles.invoiceModalTitle}>
-                  Invoice #{selectedOrderForBill?.id}
-                </ThemedText>
+                <View
+                  style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+                >
+                  <IconSymbol name="doc.text.fill" size={20} color="#007AFF" />
+                  <ThemedText type="subtitle" style={styles.invoiceModalTitle}>
+                    Invoice #{selectedOrderForBill?.id}
+                  </ThemedText>
+                </View>
                 <TouchableOpacity
                   onPress={() => setIsInvoiceModalVisible(false)}
                   style={styles.closeButton}
@@ -957,6 +1045,10 @@ export default function ProfileScreen() {
                     source={{
                       html: getInvoiceHTMLForDisplay({
                         orderId: selectedOrderForBill.id,
+                        customerName:
+                          users.find(
+                            (u) => u.id === selectedOrderForBill.userId
+                          )?.name || "Customer",
                         date: new Date(
                           selectedOrderForBill.date
                         ).toLocaleDateString("en-IN", {
@@ -1005,25 +1097,27 @@ export default function ProfileScreen() {
                     }}
                     style={styles.webView}
                   />
-
-                  <TouchableOpacity
-                    style={styles.downloadInvoiceButton}
-                    onPress={handleDownloadOrderInvoice}
-                  >
-                    <IconSymbol
-                      name="arrow.down.circle.fill"
-                      size={20}
-                      color="#FFF"
-                    />
-                    <ThemedText style={styles.downloadInvoiceText}>
-                      Download PDF
-                    </ThemedText>
-                  </TouchableOpacity>
                 </>
               )}
             </View>
           </View>
         </Modal>
+
+        <OrderActionModal
+          visible={isOrderActionModalVisible}
+          onClose={() => setIsOrderActionModalVisible(false)}
+          onViewBill={handleViewBill}
+          onDownloadPdf={handleDownloadBill}
+          orderId={selectedOrderForBill?.id}
+        />
+
+        <StatusModal
+          visible={statusModalVisible}
+          type={statusModalConfig.type}
+          title={statusModalConfig.title}
+          message={statusModalConfig.message}
+          onClose={() => setStatusModalVisible(false)}
+        />
       </ThemedView>
     );
   }
@@ -1145,9 +1239,23 @@ export default function ProfileScreen() {
               </TouchableOpacity>
             </View>
 
-            <ThemedText style={{ opacity: 0.6, marginBottom: 16 }}>
-              Total Registered Users: {users.length}
-            </ThemedText>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 8,
+                marginBottom: 16,
+              }}
+            >
+              <IconSymbol
+                name="person.2.fill"
+                size={18}
+                color="rgba(255,255,255,0.6)"
+              />
+              <ThemedText style={{ opacity: 0.6 }}>
+                Total Registered Users: {users.length}
+              </ThemedText>
+            </View>
 
             <View style={styles.searchContainer}>
               <IconSymbol
@@ -1271,11 +1379,12 @@ export default function ProfileScreen() {
       </Modal>
 
       {/* Success Modal */}
-      <SuccessModal
-        visible={showSuccessModal}
-        message={successMessage}
-        onClose={() => setShowSuccessModal(false)}
-        buttonText="OK"
+      <StatusModal
+        visible={statusModalVisible}
+        type={statusModalConfig.type}
+        title={statusModalConfig.title}
+        message={statusModalConfig.message}
+        onClose={() => setStatusModalVisible(false)}
       />
 
       {/* Delete Confirmation Modal */}
@@ -1434,12 +1543,12 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   orderCard: {
-    padding: 18,
+    padding: 24,
     backgroundColor: "rgba(255,255,255,0.04)",
-    borderRadius: 18,
+    borderRadius: 24,
     borderWidth: 1.5,
     borderColor: "rgba(255,255,255,0.12)",
-    marginBottom: 14,
+    marginBottom: 20,
   },
   orderStatusSection: {
     marginTop: 12,
@@ -1478,16 +1587,16 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   orderAmount: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "bold",
-    marginTop: 4,
+    marginTop: 8,
     textAlign: "center",
   },
   orderPickupLocation: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: "600",
     opacity: 0.7,
-    marginTop: 4,
+    marginTop: 8,
     color: "#34C759",
     textAlign: "center",
   },
@@ -2053,5 +2162,71 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "600",
     color: "#34C759",
+  },
+  ordersAddButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 122, 255, 0.1)",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(0, 122, 255, 0.2)",
+    gap: 6,
+  },
+  ordersClearButton: {
+    padding: 10,
+    backgroundColor: "rgba(255, 59, 48, 0.1)",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255, 59, 48, 0.2)",
+    marginLeft: 12,
+  },
+  modalAddToListButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#007AFF",
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    height: 56,
+    width: "100%",
+    marginBottom: 24,
+    shadowColor: "#007AFF",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  modalSaveAllButton: {
+    flex: 1,
+    height: 50,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#34C759",
+    shadowColor: "#34C759",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  modalCancelButton: {
+    flex: 1,
+    height: 50,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+  },
+  pendingDeleteButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "rgba(255, 59, 48, 0.1)",
+    justifyContent: "center",
+    alignItems: "center",
   },
 });

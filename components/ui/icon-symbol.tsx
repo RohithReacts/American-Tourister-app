@@ -70,6 +70,14 @@ const MAPPING: IconMapping = {
   "clock.fill": "access-time",
   "arrow.down.circle.fill": "cloud-download",
   "storefront.fill": "store",
+  "doc.text.fill": "description",
+  "eye.fill": "visibility",
+  "arrow.down.doc.fill": "file-download",
+  "checkmark.seal.fill": "verified",
+  "hand.thumbsup.fill": "thumb-up",
+  "list.bullet.clipboard.fill": "assignment",
+  "doc.text.magnifyingglass": "manage-search",
+  "indianrupeesign.circle.fill": "currency-rupee",
 };
 
 /**
