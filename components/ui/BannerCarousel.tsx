@@ -1,5 +1,5 @@
 import { Image } from "expo-image";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Dimensions,
   FlatList,
@@ -38,11 +38,40 @@ const BANNERS = [
     image: require("@/assets/images/banner_adventure_travel.png"),
     title: "Adventure Awaits",
   },
+  {
+    id: "6",
+    image: require("@/assets/images/banner_summer_collection.png"),
+    title: "Summer Collection",
+  },
+  {
+    id: "7",
+    image: require("@/assets/images/banner_premium_collection.png"),
+    title: "Premium Collection",
+  },
 ];
 
 export function BannerCarousel() {
   const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
+
+  // Auto-scroll effect
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveIndex((prevIndex) => {
+        const nextIndex = (prevIndex + 1) % BANNERS.length;
+
+        // Scroll to next banner
+        flatListRef.current?.scrollToIndex({
+          index: nextIndex,
+          animated: true,
+        });
+
+        return nextIndex;
+      });
+    }, 3000); // Auto-scroll every 3 seconds
+
+    return () => clearInterval(interval);
+  }, []);
 
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const scrollPosition = event.nativeEvent.contentOffset.x;

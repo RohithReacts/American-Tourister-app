@@ -1526,7 +1526,19 @@ export default function ProfileScreen() {
           <ThemedText style={styles.logoutText}>Log Out</ThemedText>
         </TouchableOpacity>
 
-        <ThemedText style={styles.versionText}>Version 1.0.0</ThemedText>
+        <ThemedText style={styles.versionText}>Version 22.10.1997</ThemedText>
+
+        {/* Brand Footer */}
+        <View style={styles.footerContainer}>
+          <Image
+            source={require("@/assets/footer.png")}
+            style={styles.footerImage}
+            contentFit="contain"
+          />
+          <View style={styles.brandContainer}>
+            <ThemedText style={styles.brandText}>Rohithreacts.dev</ThemedText>
+          </View>
+        </View>
       </ScrollView>
 
       {/* User Management Modal */}
@@ -2678,5 +2690,27 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
     color: "#FFF",
+  },
+  footerContainer: {
+    width: "100%",
+    alignItems: "center",
+    paddingVertical: 30,
+    marginTop: 30,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.05)",
+  },
+  footerImage: {
+    width: "90%",
+    height: 120,
+    marginBottom: 20,
+  },
+  brandContainer: {
+    alignItems: "center",
+  },
+  brandText: {
+    fontSize: 20,
+    fontWeight: "700",
+    letterSpacing: 1,
+    opacity: 0.7,
   },
 });

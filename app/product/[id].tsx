@@ -6,6 +6,7 @@ import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
@@ -195,16 +196,43 @@ export default function ProductDetailsScreen() {
         </View>
         {addedToCart ? (
           <TouchableOpacity
-            style={[styles.cartButton, styles.addedButton]}
+            style={styles.cartButtonContainer}
             onPress={() => router.push("/cart")}
+            activeOpacity={0.85}
           >
-            <IconSymbol name="cart.fill" size={20} color="#FFF" />
-            <ThemedText style={styles.cartButtonText}>Go to Cart</ThemedText>
+            <LinearGradient
+              colors={["#34C759", "#30D158", "#32D74B"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.cartButton}
+            >
+              <View style={styles.buttonContent}>
+                <IconSymbol name="cart.fill" size={22} color="#FFF" />
+                <ThemedText style={styles.cartButtonText}>
+                  Go to Cart
+                </ThemedText>
+              </View>
+            </LinearGradient>
           </TouchableOpacity>
         ) : (
-          <TouchableOpacity style={styles.cartButton} onPress={handleAddToCart}>
-            <IconSymbol name="cart.fill" size={20} color="#FFF" />
-            <ThemedText style={styles.cartButtonText}>Add to Cart</ThemedText>
+          <TouchableOpacity
+            style={styles.cartButtonContainer}
+            onPress={handleAddToCart}
+            activeOpacity={0.85}
+          >
+            <LinearGradient
+              colors={["#007AFF", "#5856D6", "#0A84FF"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.cartButton}
+            >
+              <View style={styles.buttonContent}>
+                <IconSymbol name="cart.fill" size={22} color="#FFF" />
+                <ThemedText style={styles.cartButtonText}>
+                  Add to Cart
+                </ThemedText>
+              </View>
+            </LinearGradient>
           </TouchableOpacity>
         )}
       </View>
@@ -422,22 +450,33 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#FFF",
   },
+  cartButtonContainer: {
+    flex: 1.5,
+    borderRadius: 18,
+    shadowColor: "#007AFF",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 12,
+  },
   cartButton: {
-    backgroundColor: "#007AFF",
-    height: 56,
-    borderRadius: 16,
-    flexDirection: "row",
+    height: 58,
+    borderRadius: 18,
     justifyContent: "center",
     alignItems: "center",
-    gap: 12,
-    flex: 1.5,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.2)",
   },
-  addedButton: {
-    backgroundColor: "#34C759",
+  buttonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
   },
   cartButtonText: {
     color: "#FFF",
-    fontSize: 18,
-    fontWeight: "bold",
+    fontSize: 17,
+    fontWeight: "800",
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
   },
 });
