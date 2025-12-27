@@ -44,10 +44,16 @@ export default function ProductDetailsScreen() {
     toggleWishlist(product);
   };
 
-  const handleAddToCart = () => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    addToCart(product, selectedSize);
-    setAddedToCart(true);
+  const handleCartAction = () => {
+    if (!addedToCart) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      addToCart(product, selectedSize);
+      setAddedToCart(true);
+    }
+    // Navigate to cart after a brief delay
+    setTimeout(() => {
+      router.push("/cart");
+    }, 300);
   };
 
   return (
@@ -194,47 +200,20 @@ export default function ProductDetailsScreen() {
             ).toLocaleString("en-IN")}
           </ThemedText>
         </View>
-        {addedToCart ? (
-          <TouchableOpacity
-            style={styles.cartButtonContainer}
-            onPress={() => router.push("/cart")}
-            activeOpacity={0.85}
+        <TouchableOpacity
+          style={styles.cartIconButton}
+          onPress={handleCartAction}
+          activeOpacity={0.85}
+        >
+          <LinearGradient
+            colors={["#007AFF", "#5856D6", "#0A84FF"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.cartButton}
           >
-            <LinearGradient
-              colors={["#34C759", "#30D158", "#32D74B"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.cartButton}
-            >
-              <View style={styles.buttonContent}>
-                <IconSymbol name="cart.fill" size={22} color="#FFF" />
-                <ThemedText style={styles.cartButtonText}>
-                  Go to Cart
-                </ThemedText>
-              </View>
-            </LinearGradient>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            style={styles.cartButtonContainer}
-            onPress={handleAddToCart}
-            activeOpacity={0.85}
-          >
-            <LinearGradient
-              colors={["#007AFF", "#5856D6", "#0A84FF"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.cartButton}
-            >
-              <View style={styles.buttonContent}>
-                <IconSymbol name="cart.fill" size={22} color="#FFF" />
-                <ThemedText style={styles.cartButtonText}>
-                  Add to Cart
-                </ThemedText>
-              </View>
-            </LinearGradient>
-          </TouchableOpacity>
-        )}
+            <IconSymbol name="bag.fill" size={26} color="#FFF" />
+          </LinearGradient>
+        </TouchableOpacity>
       </View>
     </ThemedView>
   );
@@ -450,9 +429,10 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#FFF",
   },
-  cartButtonContainer: {
-    flex: 1.5,
-    borderRadius: 18,
+  cartIconButton: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     shadowColor: "#007AFF",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.4,
@@ -460,23 +440,12 @@ const styles = StyleSheet.create({
     elevation: 12,
   },
   cartButton: {
-    height: 58,
-    borderRadius: 18,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.2)",
-  },
-  buttonContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  cartButtonText: {
-    color: "#FFF",
-    fontSize: 17,
-    fontWeight: "800",
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
   },
 });

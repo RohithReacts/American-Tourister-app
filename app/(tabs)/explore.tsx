@@ -6,6 +6,7 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { PRODUCTS } from "@/constants/products";
 import { Image } from "expo-image";
 import { useLocalSearchParams } from "expo-router";
+import { VideoView, useVideoPlayer } from "expo-video";
 import React, { useEffect, useState } from "react";
 import {
   RefreshControl,
@@ -21,6 +22,13 @@ export default function ExploreScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [refreshing, setRefreshing] = useState(false);
+
+  const videoSource = require("@/assets/videos/amt.mp4");
+  const player = useVideoPlayer(videoSource, (player) => {
+    player.loop = true;
+    player.muted = true;
+    player.play();
+  });
 
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
@@ -100,6 +108,15 @@ export default function ExploreScreen() {
           />
         }
       >
+        <View style={styles.videoContainer}>
+          <VideoView
+            player={player}
+            style={styles.video}
+            nativeControls={false}
+            contentFit="cover"
+          />
+        </View>
+
         <View style={styles.grid}>
           {filteredProducts.map((product) => (
             <ProductCard key={product.id} product={product} />
@@ -163,6 +180,18 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 16,
     paddingBottom: 24,
+  },
+  videoContainer: {
+    width: "100%",
+    height: 200,
+    borderRadius: 16,
+    overflow: "hidden",
+    marginBottom: 24,
+    backgroundColor: "rgba(255,255,255,0.05)",
+  },
+  video: {
+    width: "100%",
+    height: "100%",
   },
   grid: {
     flexDirection: "row",

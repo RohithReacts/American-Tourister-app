@@ -24,7 +24,7 @@ export interface Product {
 
 export const PRODUCTS: Product[] = [
   {
-    id: "segno-4",
+    id: "segno-4-blue",
     name: "Segno 4.0",
     description:
       "The Segno 4.0 backpack is a durable and spacious option. Constructed from Dobby Polyester and 900 D Reverse PU, it offers 34L of storage with 3 compartments and 1 front pocket. This Executive Laptop Backpack is designed for the modern professional. Enjoy superior comfort with Tractum Suspension and Smart Sleeve. Secure your laptop in the lockable, detachable compartment. Stay organized with a hidden pocket and expandable design. Charge on the go with the USB port, and protect your gear with the included rain cover. Perfect for business travel and daily commutes.",
@@ -128,7 +128,7 @@ export const PRODUCTS: Product[] = [
       "American Tourister offers a range of travel pillows designed for comfort and convenience on the go. Their travel pillows are made with high-quality materials such as soft fleece, memory foam, and microbeads that mold to the shape of your neck and provide support while you sleep. The pillows are lightweight and compact, making them easy to pack in your luggage or carry-on bag. They also come in various colors and designs to suit your personal style. Whether you're traveling by plane, car, or train, American Tourister travel pillows will help you arrive at your destination feeling rested and refreshed.",
     price: 1192,
     mrp: 1490,
-    image: require("@/assets/images/pillow.png"),
+    image: require("@/assets/images/travelpillow.png"),
     category: "Accessories",
     rating: 4.6,
     reviews: 78,
@@ -408,6 +408,177 @@ export const PRODUCTS: Product[] = [
     },
     sizeMrps: {
       "53cm": 4900,
+    },
+  },
+  {
+    id: "segno-4-grey",
+    name: "Segno 4.0",
+    description:
+      "The Segno 4.0 backpack is a durable and spacious option. Constructed from Dobby Polyester and 900 D Reverse PU, it offers 34L of storage with 3 compartments and 1 front pocket. This Executive Laptop Backpack is designed for the modern professional. Enjoy superior comfort with Tractum Suspension and Smart Sleeve. Secure your laptop in the lockable, detachable compartment. Stay organized with a hidden pocket and expandable design. Charge on the go with the USB port, and protect your gear with the included rain cover. Perfect for business travel and daily commutes.",
+    price: 3840,
+    mrp: 4800,
+    image: require("@/assets/images/segno2.0.jpg"),
+    category: "Backpacks",
+    rating: 4.9,
+    reviews: 10,
+    sizes: ["34 L"],
+    sizePrices: {
+      "34 L": 3840,
+    },
+    sizeMrps: {
+      "34 L": 4800,
+    },
+  },
+  {
+    id: "segno-4-black",
+    name: "Segno 4.0",
+    description:
+      "The Segno 4.0 backpack is a durable and spacious option. Constructed from Dobby Polyester and 900 D Reverse PU, it offers 34L of storage with 3 compartments and 1 front pocket. This Executive Laptop Backpack is designed for the modern professional. Enjoy superior comfort with Tractum Suspension and Smart Sleeve. Secure your laptop in the lockable, detachable compartment. Stay organized with a hidden pocket and expandable design. Charge on the go with the USB port, and protect your gear with the included rain cover. Perfect for business travel and daily commutes.",
+    price: 4080,
+    mrp: 5100,
+    image: require("@/assets/images/segno2.0.2.jpg"),
+    category: "Backpacks",
+    rating: 4.9,
+    reviews: 10,
+    sizes: ["34 L"],
+    sizePrices: {
+      "34 L": 4080,
+    },
+    sizeMrps: {
+      "34 L": 5100,
+    },
+  },
+  {
+    id: "segno-2-basic",
+    name: "Segno 2.0",
+    description:
+      "The Segno 2.0 range comes in 4 thoughtfully designed trendy styles - Basic, EXpandable, Detachable, and 2 Way. Made with Dobby polyester RecycleXTM material technology, every Segno 2.0, regardless of the style, comes with some standard features - 3 full compartments, a 34.5-litres volume, Ergo-on-the-go back and shoulders, a lockable laptop compartment, USB port, smart sleeve, cable pouch, and a side bottle pocket. While Segno Basic has all these features, Segno EXpandable comes with an additional eXpander feature, Segno Detachable with a detachable laptop sleeve, and Segno 2 Way can be carried both horizontally and vertically. It’s time to make the Segno 2.0 your go-to eXecutive bag!",
+    price: 4320,
+    mrp: 5400,
+    image: require("@/assets/images/segno2.0.1.jpg"),
+    category: "Backpacks",
+    rating: 4.9,
+    reviews: 10,
+    sizes: ["33 L"],
+    sizePrices: {
+      "33 L": 4320,
+    },
+    sizeMrps: {
+      "33 L": 5400,
+    },
+  },
+  {
+    id: "brett 3.0",
+    name: "Brett 3.0",
+    description:
+      "Experience elevated travel comfort with the American Tourister Brett 3.0 laptop carry bags, expertly designed for up to 15.4-inch laptops with ergonomic precision. Boasting Ergo-on-the-go back and shoulders for optimal support, three spacious compartments, and two zippered pockets for effortless organization, these bags seamlessly combine style and functionality. Crafted with eco-friendly Recyclex™ Fabric Material lining, a protective rain cover, and a microfleece pocket for essentials like glasses, they ensure superior load-bearing capability and feature Air Groove Plus Technology for enhanced back mesh padding.",
+    price: 2800,
+    mrp: 3500,
+    image: require("@/assets/images/breeths.jpg"),
+    category: "Backpacks",
+    rating: 4.9,
+    reviews: 10,
+    sizes: ["30.5 L"],
+    sizePrices: {
+      "30.5 L": 2800,
+    },
+    sizeMrps: {
+      "30.5 L": 3500,
+    },
+  },
+  {
+    id: "memory pillow-1",
+    name: "Memory Foam Pillow",
+    description:
+      "American Tourister offers a range of travel pillows designed for comfort and convenience on the go. Their travel pillows are made with high-quality materials such as soft fleece, memory foam, and microbeads that mold to the shape of your neck and provide support while you sleep. The pillows are lightweight and compact, making them easy to pack in your luggage or carry-on bag. They also come in various colors and designs to suit your personal style. Whether you're traveling by plane, car, or train, American Tourister travel pillows will help you arrive at your destination feeling rested and refreshed.",
+    price: 1192,
+    mrp: 1490,
+    image: require("@/assets/images/pillow.png"),
+    category: "Accessories",
+    rating: 4.9,
+    reviews: 10,
+    sizes: ["31cm"],
+    sizePrices: {
+      "31cm": 1192,
+    },
+    sizeMrps: {
+      "31cm": 1490,
+    },
+  },
+  {
+    id: "3 dial lock",
+    name: "3 Dial Combination Lock",
+    description:
+      "American Tourister offers a range of travel locks that provide security and peace of mind while traveling. These locks come in various sizes and styles, from cable locks to combination locks, all designed to secure your luggage from unwanted intruders. The locks are made with durable materials, such as zinc alloy, and are easy to use with straightforward instructions included. Some locks are TSA-approved, allowing TSA agents to open and inspect your luggage without damaging the lock. American Tourister's travel locks are an essential accessory for any traveler who values the security of their belongings during transit",
+    price: 360,
+    mrp: 450,
+    image: require("@/assets/images/lock1.png"),
+    category: "Accessories",
+    rating: 4.9,
+    reviews: 10,
+    sizes: ["3.2cm"],
+    sizePrices: {
+      "3.2cm": 360,
+    },
+    sizeMrps: {
+      "3.2cm": 450,
+    },
+  },
+  {
+    id: "activair",
+    name: "Activair",
+    description:
+      "When you're spotted donning the American Tourister Activair, everyone will know that you mean business. One of our finest laptop bags for men or women no bar, Activair with its soft grip handle, detachable shoulder strap and smart sleeve lets you take charge. That's not all, this dobby polyester bag comes with a front pocket exclusively designed for pro-organisation, and separate cable and tablet pockets, so you save time wherever you go!",
+    price: 3360,
+    mrp: 4200,
+    image: require("@/assets/images/office2.png"),
+    category: "Office",
+    rating: 4.9,
+    reviews: 10,
+    sizes: ["40cm"],
+    sizePrices: {
+      "40cm": 3360,
+    },
+    sizeMrps: {
+      "40cm": 4200,
+    },
+  },
+  {
+    id: "paisley",
+    name: "Paisley",
+    description:
+      "Designed for the modern professional, the American Tourister Paisley Joy Briefcase blends clean aesthetics with smart functionality. It features a dedicated 15.6 inch laptop compartment, organized interiors, and a recycled lining that supports more responsible choices. The smart sleeve makes it easy to slide over trolley handles for business travel, while the detachable shoulder strap allows you to carry it your way. Whether commuting to the office or flying for meetings, this briefcase offers structure, style, and confidence. Backed by a 1-year international warranty.",
+    price: 2320,
+    mrp: 2900,
+    image: require("@/assets/images/office.png"),
+    category: "Office",
+    rating: 4.9,
+    reviews: 10,
+    sizes: ["38cm"],
+    sizePrices: {
+      "38cm": 2320,
+    },
+    sizeMrps: {
+      "38cm": 2900,
+    },
+  },
+  {
+    id: "3 dial cable lock",
+    name: "3 Dial Combination Cable Lock",
+    description:
+      "American Tourister offers a range of travel locks that provide security and peace of mind while traveling. These locks come in various sizes and styles, from cable locks to combination locks, all designed to secure your luggage from unwanted intruders. The locks are made with durable materials, such as zinc alloy, and are easy to use with straightforward instructions included. Some locks are TSA-approved, allowing TSA agents to open and inspect your luggage without damaging the lock. American Tourister's travel locks are an essential accessory for any traveler who values the security of their belongings during transit",
+    price: 392,
+    mrp: 490,
+    image: require("@/assets/images/lock3.png"),
+    category: "Accessories",
+    rating: 4.9,
+    reviews: 10,
+    sizes: ["3.7cm"],
+    sizePrices: {
+      "3.7cm": 392,
+    },
+    sizeMrps: {
+      "3.7cm": 490,
     },
   },
 ];

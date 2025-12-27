@@ -1192,13 +1192,12 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 122, 255, 0.1)",
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 1.5,
-    borderColor: "rgba(0, 122, 255, 0.3)",
     overflow: "hidden",
   },
   userAvatarImage: {
     width: "100%",
     height: "100%",
+    borderRadius: 27,
   },
 
   addToListText: {

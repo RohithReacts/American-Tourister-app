@@ -1528,17 +1528,8 @@ export default function ProfileScreen() {
 
         <ThemedText style={styles.versionText}>Version 22.10.1997</ThemedText>
 
-        {/* Brand Footer */}
-        <View style={styles.footerContainer}>
-          <Image
-            source={require("@/assets/footer.png")}
-            style={styles.footerImage}
-            contentFit="contain"
-          />
-          <View style={styles.brandContainer}>
-            <ThemedText style={styles.brandText}>Rohithreacts.dev</ThemedText>
-          </View>
-        </View>
+       
+        
       </ScrollView>
 
       {/* User Management Modal */}
@@ -1560,7 +1551,7 @@ export default function ProfileScreen() {
               }}
             >
               <ThemedText type="subtitle" style={{ textAlign: "center" }}>
-                Admin Dashboard
+                Dashboard
               </ThemedText>
               <TouchableOpacity
                 onPress={() => setIsUserListVisible(false)}

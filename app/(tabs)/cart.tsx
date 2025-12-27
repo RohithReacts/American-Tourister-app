@@ -255,22 +255,24 @@ export default function CartScreen() {
             )}
           </View>
 
-          <View style={styles.totalRow}>
-            <ThemedText style={styles.totalLabel}>Total</ThemedText>
-            <ThemedText type="subtitle" style={styles.totalAmount}>
-              ₹{totalAmount.toLocaleString("en-IN")}
-            </ThemedText>
+          <View style={styles.checkoutRow}>
+            <View style={styles.totalColumn}>
+              <ThemedText style={styles.totalLabel}>Total</ThemedText>
+              <ThemedText type="subtitle" style={styles.totalAmount}>
+                ₹{totalAmount.toLocaleString("en-IN")}
+              </ThemedText>
+            </View>
+            <TouchableOpacity
+              style={[
+                styles.checkoutButton,
+                cartItems.length === 0 && { opacity: 0.5 },
+              ]}
+              disabled={cartItems.length === 0}
+              onPress={handleCheckout}
+            >
+              <IconSymbol name="checkmark.circle.fill" size={28} color="#FFF" />
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            style={[
-              styles.checkoutButton,
-              cartItems.length === 0 && { opacity: 0.5 },
-            ]}
-            disabled={cartItems.length === 0}
-            onPress={handleCheckout}
-          >
-            <ThemedText style={styles.checkoutText}>Checkout</ThemedText>
-          </TouchableOpacity>
         </View>
       )}
 
@@ -447,11 +449,14 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "rgba(255,255,255,0.05)",
   },
-  totalRow: {
+  checkoutRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
+    gap: 16,
+  },
+  totalColumn: {
+    flex: 1,
   },
   totalLabel: {
     fontSize: 16,
@@ -463,15 +468,16 @@ const styles = StyleSheet.create({
   },
   checkoutButton: {
     backgroundColor: "#007AFF",
-    height: 56,
-    borderRadius: 16,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     justifyContent: "center",
     alignItems: "center",
-  },
-  checkoutText: {
-    color: "#FFF",
-    fontSize: 18,
-    fontWeight: "bold",
+    shadowColor: "#007AFF",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 12,
   },
   modalOverlay: {
     flex: 1,
